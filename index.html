@@ -77,6 +77,7 @@ nav button.on{color:var(--brand);font-weight:700}
 .gi img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
 .gi .no{position:absolute;top:6px;left:6px;background:var(--brand);color:#fff;border-radius:99px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
 .gi .tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;text-align:center;padding:2px}
+.gi .redo{position:absolute;top:6px;right:40px;background:rgba(194,65,12,.9);color:#fff;border:0;border-radius:99px;width:28px;height:28px;font-size:15px;display:flex;align-items:center;justify-content:center}
 .gi .zoom{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.5);color:#fff;border-radius:99px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;text-decoration:none}
 .note{background:#fef9c3;border-radius:12px;padding:10px;font-size:14px;margin-top:8px}
 .note.err{background:#fee2e2;color:#991b1b}
@@ -452,10 +453,10 @@ $('#dDel').onclick=async()=>{
 };
 function allImages(){
   const a=[];
-  if(CUR.img_white)a.push({id:CUR.img_white,tag:'AI พื้นขาว'});
-  if(CUR.img_banner)a.push({id:CUR.img_banner,tag:'AI ป้ายขาย'});
-  if(CUR.img_scene)a.push({id:CUR.img_scene,tag:'AI จัดฉาก'});
-  (CUR.extraArr||[]).forEach((id,i)=>a.push({id,tag:'สไตล์ '+(i+1)}));
+  if(CUR.img_white)a.push({id:CUR.img_white,tag:'AI พื้นขาว',kind:'white'});
+  if(CUR.img_banner)a.push({id:CUR.img_banner,tag:'AI ป้ายขาย',kind:'banner'});
+  if(CUR.img_scene)a.push({id:CUR.img_scene,tag:'AI จัดฉาก',kind:'scene'});
+  (CUR.extraArr||[]).forEach((id,i)=>a.push({id,tag:'สไตล์ '+(i+1),kind:'extra'}));
   (CUR.photosArr||[]).forEach((id,i)=>a.push({id,tag:'รูปจริง '+(i+1)}));
   return a;
 }
@@ -481,7 +482,7 @@ function renderDetail(){
   }
   const imgs=allImages();
   h+=`<div class="card"><div class="lbl">รูปสินค้า <small>แตะเพื่อเลือก/เรียงลำดับ (รูปที่ 1 = รูปปก) สูงสุด 9 รูป</small></div>
-    <div class="gal">${imgs.map(x=>{const n=ORDER.indexOf(x.id);return `<div class="gi ${n>=0?'on':''}" data-id="${x.id}"><img src="${img(x.id)}" loading="lazy">${n>=0?`<div class="no">${n+1}</div>`:''}<a class="zoom" href="${img(x.id,1600)}" target="_blank">🔍</a><div class="tag">${x.tag}</div></div>`}).join('')}</div>
+    <div class="gal">${imgs.map(x=>{const n=ORDER.indexOf(x.id);return `<div class="gi ${n>=0?'on':''}" data-id="${x.id}"><img src="${img(x.id)}" loading="lazy">${n>=0?`<div class="no">${n+1}</div>`:''}<a class="zoom" href="${img(x.id,1600)}" target="_blank">🔍</a>${x.kind?`<button class="redo" data-kind="${x.kind}" data-id="${x.id}" title="ไม่ผ่าน ทำใหม่">${x.kind==='extra'?'🗑':'↻'}</button>`:''}<div class="tag">${x.tag}</div></div>`}).join('')}</div>
     <div id="imgProg" class="${PROG?'note':'hidden'}">${PROG}</div>
     <div class="lbl">สร้างรูปใหม่จาก <small>รูปจริงใบที่</small></div>
     <div class="row"><select id="srcIdx" style="flex:0 0 70px">${(c.photosArr||[]).map((_,i)=>`<option value="${i}">${i+1}</option>`).join('')}</select>
@@ -572,6 +573,7 @@ function readBanner(){return{badge:$('#bBadge').value.trim(),headline:$('#bHead'
 function bindDetail(){
   $$('.gi[data-id]').forEach(e=>e.onclick=ev=>{
     if(ev.target.closest('.zoom'))return;
+    const rd=ev.target.closest('.redo');if(rd){redo(rd.dataset.kind,rd.dataset.id);return}
     const id=e.dataset.id,i=ORDER.indexOf(id);
     if(i>=0)ORDER.splice(i,1);else{if(ORDER.length>=9)return toast('สูงสุด 9 รูป');ORDER.push(id)}
     const keep=gather();renderDetail();restore(keep);
@@ -605,6 +607,14 @@ function counters(){
 }
 function gather(){const o={};$$('#dBody [data-k]').forEach(e=>o[e.dataset.k]=e.value);return o}
 function restore(o){Object.keys(o).forEach(k=>{const e=$(`#dBody [data-k="${k}"]`);if(e)e.value=o[k]});counters()}
+/* ปุ่ม ↻ บนรูป: รูปไม่ผ่าน → ทำใหม่ (พื้นขาวเปลี่ยนไปใช้รูปจริงใบถัดไป, ฉากสุ่มใหม่, ป้ายวาดใหม่, รูปสไตล์ลบออก) */
+async function redo(kind,fid){
+  if(kind==='extra'){if(!confirm('ลบรูปนี้?'))return;const keep=gather();CUR=await run('removeExtra',CUR.id,fid);ORDER=ORDER.filter(x=>x!==fid);renderDetail();restore(keep);return}
+  if(kind==='banner'){await composeBanner(CUR.bannerObj||{},true);return}
+  const n=(CUR.photosArr||[]).length;
+  if(kind==='white'&&n>1){const sel=$('#srcIdx');sel.value=String(((+sel.value||0)+1)%n);toast('ทำพื้นขาวใหม่จากรูปจริงใบที่ '+(+sel.value+1))}
+  await regen(kind);
+}
 async function regen(kind){
   const btn=$(kind==='white'?'#rgWhite':'#rgScene');
   const idx=+$('#srcIdx').value||0, stype=$('#sceneType')?$('#sceneType').value:CUR.scene_type;
@@ -644,18 +654,58 @@ async function bgLib(){
   if(!BGLIB){const m=await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');BGLIB=m.removeBackground||m.default}
   return BGLIB;
 }
-async function getCut(fid){
+async function getCut(fid,model){
   if(!fid)throw new Error('ไม่มีรูปถ่ายจริง');
-  if(CUT[fid])return CUT[fid];
+  model=model||BOOT.cutModel||'isnet_fp16';const key=fid+'|'+model;
+  if(CUT[key])return CUT[key];
   setProg('<span class="spin"></span> กำลังเตรียมตัวตัดพื้นหลัง (ครั้งแรกโหลดประมาณ 80 MB ควรใช้ Wi-Fi)...');
   const removeBg=await bgLib();
   const src=await dataUrl(fid);
-  const blob=await removeBg(src,{model:BOOT.cutModel||'isnet_fp16',output:{format:'image/png'},progress:(k,c,t)=>{
+  const blob=await removeBg(src,{model,output:{format:'image/png'},progress:(k,c,t)=>{
     if(String(k).startsWith('fetch')&&t)setProg(`<span class="spin"></span> กำลังโหลดตัวตัดพื้นหลัง ${Math.round(c/t*100)}%`);
     else setProg('<span class="spin"></span> กำลังตัดพื้นหลัง...');
   }});
   const u=URL.createObjectURL(blob);const im=await loadImg(u);URL.revokeObjectURL(u);
-  CUT[fid]=trimAlpha(refineEdges(im));setProg('');return CUT[fid];
+  const ref=refineEdges(im),q=alphaQuality(ref),cut=trimAlpha(ref);cut.q=q;
+  CUT[key]=cut;setProg('');return cut;
+}
+/* ตรวจรูปที่ตัดอัตโนมัติ (ฟรี): สินค้าน้อย/ลบพื้นไม่ออก/มีเศษหลายชิ้น/โดนตัดขอบ */
+function alphaQuality(c){
+  const N=64,s=document.createElement('canvas');s.width=s.height=N;const x=s.getContext('2d');x.drawImage(c,0,0,N,N);
+  const d=x.getImageData(0,0,N,N).data,on=new Uint8Array(N*N),seen=new Uint8Array(N*N);let tot=0,main=0;
+  for(let i=0;i<N*N;i++)if(d[i*4+3]>128){on[i]=1;tot++}
+  for(let i=0;i<N*N;i++)if(on[i]&&!seen[i]){let n=0;const st=[i];seen[i]=1;
+    while(st.length){const k=st.pop();n++;const y=k/N|0,xx=k%N;
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=xx+dx,Y=y+dy;if(X<0||Y<0||X>=N||Y>=N)continue;const j=Y*N+X;if(on[j]&&!seen[j]){seen[j]=1;st.push(j)}}}
+    if(n>main)main=n}
+  const cov=tot/(N*N),mr=tot?main/tot:0;
+  const row=y=>{for(let i=0;i<N;i++)if(on[y*N+i])return 1;return 0},col=xx=>{for(let i=0;i<N;i++)if(on[i*N+xx])return 1;return 0};
+  const sides=row(0)+row(N-1)+col(0)+col(N-1);
+  const why=[];
+  if(cov<.03)why.push('เจอสินค้าน้อยเกินไป');if(cov>.9)why.push('ลบพื้นหลังไม่ออก');
+  if(mr<.85)why.push('มีเศษพื้นหลังติดมา');if(sides>=3)why.push('สินค้าล้นขอบรูป');
+  return {pass:!why.length,why:why.join(', '),score:(cov>=.03&&cov<=.9?1:0)+mr+(sides<3?1:0)-Math.abs(.35-cov)};
+}
+/* ลองหลายรูป/หลายตัวตัด จนกว่าจะผ่าน — ไม่ผ่านเลยใช้อันที่ดีที่สุดแล้วติดธงให้ตรวจ */
+async function bestCut(id,photos,log){
+  const models=[...new Set([BOOT.cutModel||'isnet_fp16','isnet'])];
+  const tries=photos.slice(0,3).map((f,i)=>[f,i,models[0]]);
+  if(models[1]){tries.push([photos[0],0,models[1]]);if(photos[1])tries.push([photos[1],1,models[1]])}
+  let best=null;
+  for(const [f,i,m] of tries.slice(0,5)){
+    let cut;try{cut=await getCut(f,m)}catch(e){log&&log(`รูปจริง ${i+1}: ตัดไม่ได้ (${errMsg(e)})`);continue}
+    let ok=cut.q.pass,why=cut.q.why,white=null;
+    if(ok&&BOOT.aiCheck){
+      white=makeWhiteCanvas(cut);
+      try{const r=await run('checkImageData',id,white.toDataURL('image/jpeg',.85),i);ok=r.pass;why=r.reason||('คะแนน '+r.score)}catch(e){/* โควตาเต็ม → ข้ามการตรวจ */}
+    }
+    const cand={cut,idx:i,ok,why,score:cut.q.score+(ok?10:0),white};
+    if(ok)return cand;
+    log&&log(`รูปจริง ${i+1} ไม่ผ่าน: ${why} → ลองใหม่`);
+    if(!best||cand.score>best.score)best=cand;
+  }
+  if(!best)throw new Error('ตัดพื้นหลังไม่สำเร็จทุกรูป');
+  best.failed=true;return best;
 }
 /* ทำขอบให้เนียน: เบลอขอบ 1px แล้วบีบให้คม ตัดขอบฟุ้ง/เศษพื้นหลังที่ค้าง */
 function refineEdges(im){
@@ -743,12 +793,14 @@ async function makeSceneCanvas(cut,type){
 async function ensureImages(){
   if(MAKING||!CUR||!(CUR.title_shopee||CUR.name))return;MAKING=true;
   try{
-    const src=(CUR.photosArr||[])[0];
+    const photos=CUR.photosArr||[];
     const needW=BOOT.whiteMode==='BROWSER'&&!CUR.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!CUR.img_scene;
-    if((needW||needS)&&src){
-      const cut=await getCut(src);
-      if(needW)await saveKind('white',makeWhiteCanvas(cut));
-      if(needS)await saveKind('scene',await makeSceneCanvas(cut,CUR.scene_type));
+    if((needW||needS)&&photos.length){
+      const b=await bestCut(CUR.id,photos,t=>setProg('🔁 '+esc(t)));
+      if(needW)await saveKind('white',b.white||makeWhiteCanvas(b.cut));
+      if(needS)await saveKind('scene',await makeSceneCanvas(b.cut,CUR.scene_type));
+      if(b.failed){const msg='⚠️ รูปตัดพื้นหลังไม่ผ่านเกณฑ์อัตโนมัติ ('+b.why+') — ลองกด ↻ ที่รูป หรือถ่ายรูปใหม่ให้เห็นสินค้าทั้งชิ้นบนพื้นเรียบ';
+        await run('flagImage',CUR.id,msg);const keep=gather();CUR.error=msg;renderDetail();restore(keep)}
     }
     if(BOOT.makeBanner&&CUR.img_white&&!CUR.img_banner&&CUR.bannerObj&&CUR.bannerObj.headline)await composeBanner(CUR.bannerObj,true,true);
     setProg('');
@@ -870,13 +922,14 @@ document.addEventListener('visibilitychange',()=>{if(NIGHT&&document.visibilityS
 async function nwait(ms,msg){const end=Date.now()+ms;while(NIGHT&&Date.now()<end){nstat(`${msg} (อีก ${Math.ceil((end-Date.now())/60000)} นาที)`);await sleep(5000)}}
 function needImgs(p){return (BOOT.whiteMode==='BROWSER'&&!p.imgs.w)||(BOOT.sceneMode==='TEMPLATE'&&!p.imgs.s)||(BOOT.makeBanner&&!p.imgs.b)}
 async function nightImages(id){
-  let p=await run('getProduct',id);const src=(p.photosArr||[])[0];if(!src)return false;
+  let p=await run('getProduct',id);const photos=p.photosArr||[];if(!photos.length)return false;
   const needW=BOOT.whiteMode==='BROWSER'&&!p.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!p.img_scene;
   if(needW||needS){
-    const cut=await getCut(src);
-    if(needW)p=await run('saveImage',id,'white',makeWhiteCanvas(cut).toDataURL('image/jpeg',.9),null);
-    if(needS)p=await run('saveImage',id,'scene',(await makeSceneCanvas(cut,p.scene_type)).toDataURL('image/jpeg',.9),null);
-    delete CUT[src];
+    const b=await bestCut(id,photos,t=>nlog(id+': 🔁 '+t));
+    if(needW)p=await run('saveImage',id,'white',(b.white||makeWhiteCanvas(b.cut)).toDataURL('image/jpeg',.9),null);
+    if(needS)p=await run('saveImage',id,'scene',(await makeSceneCanvas(b.cut,p.scene_type)).toDataURL('image/jpeg',.9),null);
+    if(b.failed){await run('flagImage',id,'⚠️ รูปตัดพื้นหลังไม่ผ่านเกณฑ์อัตโนมัติ ('+b.why+') — ควรตรวจ');nlog(id+': ⚠️ ลองครบแล้วยังไม่ผ่าน ใช้รูปที่ดีที่สุด + ติดธงให้ตรวจ')}
+    Object.keys(CUT).forEach(k=>{if(photos.some(f=>k.startsWith(f)))delete CUT[k]});
   }
   if(BOOT.makeBanner&&p.img_white&&!p.img_banner&&p.bannerObj&&p.bannerObj.headline){
     const cv=document.createElement('canvas');await drawBanner(cv,await dataUrl(p.img_white),p.bannerObj,p.shop,'');
