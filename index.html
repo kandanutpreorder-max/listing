@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c2410c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ลงสินค้า">
+<title>ลงสินค้า AI</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-32.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--brand:#c2410c;--brand2:#fb923c;--bg:#fff7ed;--card:#fff;--ink:#1f2937;--mute:#6b7280;--line:#fed7aa;--ok:#16a34a;--warn:#ca8a04;--err:#dc2626}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:Kanit,'Noto Sans Myanmar',sans-serif;background:var(--bg);color:var(--ink);font-size:16px;padding-bottom:84px}
+body.my{font-family:'Noto Sans Myanmar',Kanit,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--brand);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px}
+header h1{font-size:18px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{background:rgba(255,255,255,.2);border:0;color:#fff;border-radius:99px;padding:6px 12px;font:inherit;font-size:14px}
+main{max-width:720px;margin:0 auto;padding:12px}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.lbl{font-weight:500;margin:10px 0 6px;font-size:15px}.lbl:first-child{margin-top:0}
+.lbl small{color:var(--mute);font-weight:400}
+input[type=text],input[type=number],textarea,select{width:100%;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+textarea{min-height:90px;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--brand2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:10px 14px;font:inherit;font-weight:500;background:#ffedd5;color:var(--brand);cursor:pointer}
+.btn:disabled{opacity:.5}
+.btn.primary{background:var(--brand);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.big{padding:16px;font-size:17px;flex:1}
+.btn.xl{width:100%;padding:18px;font-size:18px;border-radius:16px}
+.btn.sm{padding:7px 10px;font-size:14px}
+.btn.ghost{background:#fff;border:1.5px dashed var(--brand2)}
+.btn.danger{background:#fee2e2;color:var(--err)}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+.hint{color:var(--mute);font-size:13px;margin-top:6px}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.thumbs:empty{display:none}
+.th{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#eee}
+.th img{width:100%;height:100%;object-fit:cover}
+.th .x,.th .star{position:absolute;top:4px;border:0;border-radius:99px;width:28px;height:28px;font-size:14px;background:rgba(0,0,0,.55);color:#fff}
+.th .x{right:4px}.th .star{left:4px}
+.th .main{position:absolute;left:0;bottom:0;right:0;background:var(--brand);color:#fff;font-size:11px;text-align:center}
+.step{display:flex;align-items:center;gap:6px}.step button{width:46px;height:46px;font-size:22px}.step input{text-align:center;font-size:20px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 12px;font:inherit;font-size:14px;color:var(--ink)}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.sw{display:flex;align-items:center;gap:10px;margin-top:12px}
+.sw input{width:22px;height:22px;accent-color:var(--brand)}
+details summary{cursor:pointer;color:var(--brand);font-weight:500;margin-top:10px}
+#qbar{margin-top:10px}
+.qitem{background:#fff;border-radius:12px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;font-size:14px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid var(--line);z-index:6;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;font:inherit;padding:10px 0 12px;color:var(--mute);font-size:13px}
+nav button b{display:block;font-size:22px}
+nav button.on{color:var(--brand);font-weight:700}
+.view{display:none}.view.on{display:block}
+.pcard{display:flex;gap:10px;background:#fff;border-radius:14px;padding:10px;margin-bottom:8px;align-items:center;cursor:pointer}
+.pcard img{width:70px;height:70px;border-radius:10px;object-fit:cover;background:#eee;flex:none}
+.pcard .t{flex:1;min-width:0}
+.pcard .n{font-weight:500;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:15px}
+.pcard .m{color:var(--mute);font-size:13px}
+.badge{display:inline-block;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:500;color:#fff;background:#9ca3af}
+.b-รอAI{background:#9ca3af}.b-AIกำลังทำ{background:#2563eb}.b-รอตรวจ{background:var(--warn)}.b-อนุมัติแล้ว{background:var(--ok)}.b-ส่งออกแล้ว{background:#7c3aed}.b-ผิดพลาด{background:var(--err)}
+.sheet{position:fixed;inset:0;background:var(--bg);z-index:10;overflow:auto;padding-bottom:110px}
+.sheet .top{position:sticky;top:0;background:var(--brand);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px;z-index:2}
+.sheet .top b{flex:1}
+.hidden{display:none!important}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gi{position:relative;border-radius:12px;overflow:hidden;border:3px solid transparent;background:#fff;cursor:pointer}
+.gi.on{border-color:var(--brand)}
+.gi img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.gi .no{position:absolute;top:6px;left:6px;background:var(--brand);color:#fff;border-radius:99px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.gi .tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;text-align:center;padding:2px}
+.gi .zoom{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.5);color:#fff;border-radius:99px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;text-decoration:none}
+.note{background:#fef9c3;border-radius:12px;padding:10px;font-size:14px;margin-top:8px}
+.note.err{background:#fee2e2;color:#991b1b}
+.cnt{float:right;color:var(--mute);font-size:13px;font-weight:400}.cnt.over{color:var(--err);font-weight:700}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1}
+.actions{position:fixed;left:0;right:0;bottom:0;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;border-top:1px solid var(--line);z-index:11}
+.actions .btn{flex:1;padding:14px}
+canvas#bn{width:100%;border-radius:12px;background:#fff;display:block;margin-top:8px}
+#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;z-index:30;opacity:0;transition:.25s;pointer-events:none;max-width:90%;text-align:center}
+#toast.on{opacity:.92}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid #fed7aa;border-top-color:var(--brand);border-radius:50%;animation:s 1s linear infinite;vertical-align:middle}
+@keyframes s{to{transform:rotate(360deg)}}
+.exbtn{width:100%;margin-bottom:8px;padding:16px;font-size:17px;justify-content:space-between}
+a{color:var(--brand)}
+</style>
+</head>
+<body>
+<header>
+  <img src="icons/icon-192.png" alt="" id="logo" style="width:32px;height:32px;border-radius:8px" onerror="this.style.display='none'">
+  <h1 id="shop">ระบบลงสินค้า</h1>
+  <button class="pill" id="setBtn" title="ตั้งค่าการเชื่อมต่อ">⚙️</button>
+  <button class="pill" id="langBtn">🇲🇲 မြန်မာ</button>
+</header>
+
+<main>
+<!-- ============ ถ่ายรูป ============ -->
+<section class="view on" id="v-cap">
+  <div class="card">
+    <div class="lbl" data-t="staff">ชื่อพนักงาน</div>
+    <input type="text" id="staff" autocomplete="off">
+  </div>
+
+  <div class="card">
+    <div class="lbl" data-t="photos">รูปสินค้า</div>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="row">
+      <label class="btn big primary"><input type="file" id="inCam" accept="image/*" capture="environment" hidden>📷 <span data-t="shoot">ถ่ายรูป</span></label>
+      <label class="btn big ghost"><input type="file" id="inLib" accept="image/*" multiple hidden>🖼️ <span data-t="pick">เลือกหลายรูป</span></label>
+    </div>
+    <div class="hint" data-t="hint1">ถ่ายได้หลายมุม (สูงสุด 8 รูป) รูปแรก = รูปหลักที่ AI ใช้แต่งรูป กด ⭐ เพื่อเปลี่ยน</div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="align-items:flex-end">
+      <div>
+        <div class="lbl" data-t="qty">จำนวน</div>
+        <div class="step"><button class="btn" id="qMinus">−</button><input type="number" id="qty" value="1" min="1" inputmode="numeric"><button class="btn" id="qPlus">+</button></div>
+      </div>
+      <div>
+        <div class="lbl" data-t="price">ราคาขาย (ไม่ใส่ก็ได้)</div>
+        <input type="number" id="price" inputmode="decimal" placeholder="฿">
+      </div>
+    </div>
+
+    <div class="lbl" data-t="cond">สภาพสินค้า</div>
+    <div class="chips" id="conds"></div>
+
+    <div class="lbl" data-t="sku">รหัสสินค้า / QR (ไม่ใส่ก็ได้)</div>
+    <div class="row">
+      <input type="text" id="sku" style="flex:3" autocomplete="off">
+      <label class="btn sm" style="flex:1"><input type="file" id="inScan" accept="image/*" capture="environment" hidden>📷 <span data-t="scan">สแกน</span></label>
+    </div>
+
+    <details>
+      <summary data-t="more">น้ำหนัก / ขนาด (ไม่ใส่ก็ได้ AI จะประมาณให้)</summary>
+      <div class="lbl" data-t="weight">น้ำหนัก (กรัม)</div>
+      <input type="number" id="weight" inputmode="numeric">
+      <div class="lbl" data-t="size">ขนาด ยาว × กว้าง × สูง (ซม.)</div>
+      <div class="row"><input type="number" id="sL" placeholder="ยาว" inputmode="decimal"><input type="number" id="sW" placeholder="กว้าง" inputmode="decimal"><input type="number" id="sH" placeholder="สูง" inputmode="decimal"></div>
+    </details>
+
+    <div class="lbl" data-t="extra">ข้อมูลเพิ่มเติม (ไม่ใส่ก็ได้)</div>
+    <textarea id="extra" data-tp="extraPh" placeholder="เช่น ยี่ห้อ รุ่น ขนาด ใช้งานได้ปกติ มีรอยตรงไหน ของในกล่องมีอะไรบ้าง — ยิ่งใส่ AI ยิ่งหาข้อมูลแม่น"></textarea>
+
+    <label class="sw"><input type="checkbox" id="aiNow" checked><span data-t="aiNow">ให้ AI ทำทันทีหลังบันทึก</span></label>
+  </div>
+
+  <button class="btn primary xl" id="btnSave" data-t="save">💾 บันทึก แล้วถ่ายชิ้นต่อไป</button>
+  <div id="qbar"></div>
+</section>
+
+<!-- ============ รายการ ============ -->
+<section class="view" id="v-list">
+  <div class="card">
+    <div class="chips" id="filters"></div>
+    <input type="text" id="q" placeholder="🔍 ค้นหา ID / ชื่อสินค้า" style="margin-top:10px">
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="btnRunAll">🤖 ให้ AI ทำที่ค้าง</button>
+      <button class="btn" id="btnReload" style="flex:0 0 52px">🔄</button>
+    </div>
+    <div class="hint" id="runInfo"></div>
+  </div>
+  <div id="list"></div>
+</section>
+
+<!-- ============ ส่งออก ============ -->
+<section class="view" id="v-exp">
+  <div class="card">
+    <div class="lbl">ส่งออกไฟล์ลงสินค้า (Mass Upload)</div>
+    <div class="hint" style="margin-bottom:12px">ระบบจะรวมสินค้าที่ <b>อนุมัติแล้ว</b> เป็นไฟล์ Excel แยกแต่ละแพลตฟอร์ม แล้วนำไปวางในไฟล์ Mass Upload ของ Seller Center (ดาวน์โหลดตามหมวดหมู่ในเมนูเพิ่มสินค้าหลายรายการ) เลือกหมวดหมู่ตามที่ AI แนะนำ แล้วอัปโหลด</div>
+    <button class="btn exbtn" data-p="shopee"><span>🟠 Shopee</span><span id="c-shopee">0 ชิ้น</span></button>
+    <button class="btn exbtn" data-p="tiktok"><span>⚫ TikTok Shop</span><span id="c-tiktok">0 ชิ้น</span></button>
+    <button class="btn exbtn" data-p="lazada"><span>🔵 Lazada</span><span id="c-lazada">0 ชิ้น</span></button>
+    <label class="sw"><input type="checkbox" id="incExp"><span>รวมสินค้าที่เคยส่งออกแล้วด้วย</span></label>
+  </div>
+  <div id="expOut"></div>
+</section>
+</main>
+
+<nav>
+  <button class="on" data-v="cap"><b>📷</b><span data-t="nav_cap">ถ่ายรูป</span></button>
+  <button data-v="list"><b>📋</b><span data-t="nav_list">รายการ</span></button>
+  <button data-v="exp"><b>📤</b><span data-t="nav_exp">ส่งออก</span></button>
+</nav>
+
+<!-- ============ หน้าตรวจ/แก้ ============ -->
+<div class="sheet hidden" id="detail">
+  <div class="top"><button class="pill" id="dBack">← กลับ</button><b id="dTitle"></b><button class="pill" id="dDel">🗑</button></div>
+  <main id="dBody"></main>
+  <div class="actions hidden" id="dActions">
+    <button class="btn" id="dSave">💾 บันทึก</button>
+    <button class="btn ok" id="dApprove">✅ อนุมัติ</button>
+  </div>
+</div>
+
+<div id="qrtmp" style="display:none"></div>
+<div id="toast"></div>
+
+<!-- ตั้งค่าการเชื่อมต่อ (เฉพาะเวอร์ชันบน GitHub) -->
+<div class="sheet hidden" id="setup">
+  <div class="top"><b>⚙️ เชื่อมต่อระบบ</b><button class="pill" id="setClose">✕</button></div>
+  <main>
+    <div class="card" style="text-align:center"><img src="icons/icon-192.png" style="width:88px;height:88px;border-radius:22px"><div class="lbl" style="margin-top:8px">ลงสินค้า AI</div></div>
+    <div class="card">
+      <div class="lbl">ลิงก์เว็บแอป (Apps Script) <small>ลงท้ายด้วย /exec</small></div>
+      <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+      <div class="lbl">รหัสเข้าแอป <small>ดูได้ที่แท็บตั้งค่า แถว APP_PIN</small></div>
+      <input type="text" id="apiPin" inputmode="numeric" autocomplete="off">
+      <button class="btn primary xl" id="apiSave" style="margin-top:14px">เชื่อมต่อ</button>
+      <div class="hint" id="apiMsg"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ---------- ตัวช่วย ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const IN_GAS=typeof google!=='undefined'&&google.script&&google.script.run;
+const API={url:'',pin:''};
+async function run(fn,...a){
+  if(IN_GAS)return new Promise((ok,ng)=>google.script.run.withSuccessHandler(ok).withFailureHandler(ng)[fn](...a));
+  if(!API.url)throw new Error('ยังไม่ได้เชื่อมต่อระบบ (กด ⚙️)');
+  let r;
+  try{r=await fetch(API.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn,args:a,pin:API.pin}),redirect:'follow'})}
+  catch(e){throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ต/ลิงก์เว็บแอป')}
+  let j;try{j=await r.json()}catch(e){throw new Error('เซิร์ฟเวอร์ตอบกลับผิดรูปแบบ (ตรวจว่า Deploy เป็น "ทุกคน" และใช้ลิงก์ /exec)')}
+  if(!j.ok)throw new Error(j.error);return j.data;
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
+const img=(id,w)=>id?`https://lh3.googleusercontent.com/d/${id}=w${w||400}`:'';
+function toast(t,ms){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),ms||2200)}
+const errMsg=e=>(e&&e.message)||String(e);
+
+/* ---------- ภาษา ไทย / พม่า ---------- */
+const T={
+ th:{staff:'ชื่อพนักงาน',photos:'รูปสินค้า',shoot:'ถ่ายรูป',pick:'เลือกหลายรูป',hint1:'ถ่ายได้หลายมุม (สูงสุด 8 รูป) รูปแรก = รูปหลักที่ AI ใช้แต่งรูป กด ⭐ เพื่อเปลี่ยน',qty:'จำนวน',price:'ราคาขาย (ไม่ใส่ก็ได้)',cond:'สภาพสินค้า',sku:'รหัสสินค้า / QR (ไม่ใส่ก็ได้)',scan:'สแกน',more:'น้ำหนัก / ขนาด (ไม่ใส่ก็ได้ AI จะประมาณให้)',weight:'น้ำหนัก (กรัม)',size:'ขนาด ยาว × กว้าง × สูง (ซม.)',extra:'ข้อมูลเพิ่มเติม (ไม่ใส่ก็ได้)',extraPh:'เช่น ยี่ห้อ รุ่น ขนาด ใช้งานได้ปกติ มีรอยตรงไหน ของในกล่องมีอะไรบ้าง — ยิ่งใส่ AI ยิ่งหาข้อมูลแม่น',aiNow:'ให้ AI ทำทันทีหลังบันทึก',save:'💾 บันทึก แล้วถ่ายชิ้นต่อไป',needPhoto:'ใส่รูปอย่างน้อย 1 รูป',needStaff:'ใส่ชื่อพนักงานก่อน',saved:'บันทึกแล้ว',uploading:'กำลังอัปโหลด',failed:'อัปโหลดไม่สำเร็จ',retry:'ลองใหม่',max8:'ใส่ได้สูงสุด 8 รูป',qrFail:'อ่าน QR ไม่ได้ ลองถ่ายใหม่ให้ชัดขึ้น',nav_cap:'ถ่ายรูป',nav_list:'รายการ',nav_exp:'ส่งออก',lang:'🇲🇲 မြန်မာ'},
+ my:{staff:'ဝန်ထမ်းအမည်',photos:'ပစ္စည်းဓာတ်ပုံ',shoot:'ဓာတ်ပုံရိုက်ရန်',pick:'ဓာတ်ပုံများ ရွေးရန်',hint1:'ထောင့်စုံမှ ရိုက်ပါ (အများဆုံး ၈ ပုံ)။ ပထမပုံ = ပင်မပုံ။ ⭐ နှိပ်၍ ပြောင်းနိုင်သည်',qty:'အရေအတွက်',price:'ရောင်းဈေး (မထည့်လည်းရ)',cond:'ပစ္စည်းအခြေအနေ',sku:'ပစ္စည်းကုဒ် / QR (မထည့်လည်းရ)',scan:'စကန်',more:'အလေးချိန် / အရွယ်အစား (မထည့်လည်းရ)',weight:'အလေးချိန် (ဂရမ်)',size:'အရွယ်အစား အလျား × အနံ × အမြင့် (စင်တီမီတာ)',extra:'အချက်အလက် ထပ်ဆောင်း (မထည့်လည်းရ)',extraPh:'ဥပမာ - တံဆိပ်၊ မော်ဒယ်၊ အရွယ်အစား၊ ကောင်းကောင်းအလုပ်လုပ်သည်၊ အစင်းရာ ရှိသည့်နေရာ',aiNow:'သိမ်းပြီးတာနဲ့ AI ကို ချက်ချင်း လုပ်ခိုင်းမည်',save:'💾 သိမ်းပြီး နောက်တစ်ခု ရိုက်ရန်',needPhoto:'ဓာတ်ပုံ အနည်းဆုံး ၁ ပုံ ထည့်ပါ',needStaff:'ဝန်ထမ်းအမည် အရင်ထည့်ပါ',saved:'သိမ်းပြီးပါပြီ',uploading:'တင်နေသည်',failed:'တင်မရပါ',retry:'ပြန်ကြိုးစားရန်',max8:'အများဆုံး ၈ ပုံသာ ထည့်နိုင်သည်',qrFail:'QR ဖတ်မရပါ။ ပြန်ရိုက်ပါ',nav_cap:'ဓာတ်ပုံ',nav_list:'စာရင်း',nav_exp:'ထုတ်ယူ',lang:'🇹🇭 ไทย'}
+};
+const CONDS=[{v:'มือ 1 (ใหม่)',my:'ပစ္စည်းအသစ်'},{v:'มือ 2 สภาพดีมาก',my:'တစ်ပတ်ရစ် - အလွန်ကောင်း'},{v:'มือ 2 สภาพดี',my:'တစ်ပတ်ရစ် - ကောင်း'},{v:'มือ 2 มีตำหนิ',my:'တစ်ပတ်ရစ် - အပြစ်အနာအဆာရှိ'}];
+let LANG=ls('lang')==='my'?'my':'th';
+const t=k=>T[LANG][k]||T.th[k]||k;
+function applyLang(){
+  document.body.classList.toggle('my',LANG==='my');
+  $$('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+  $$('[data-tp]').forEach(e=>e.placeholder=t(e.dataset.tp));
+  $('#langBtn').textContent=t('lang');
+  renderConds(); renderQueue();
+}
+$('#langBtn').onclick=()=>{LANG=LANG==='th'?'my':'th';ls('lang',LANG);applyLang()};
+
+/* ---------- เริ่มต้น ---------- */
+let BOOT={shop:'',max:{shopee:120,tiktok:255,lazada:255},makeBanner:true,whiteMode:'BROWSER',sceneMode:'TEMPLATE',scenes:{}};
+$('#staff').value=ls('staff')||'';
+$('#staff').onchange=()=>ls('staff',$('#staff').value.trim());
+/* เปิดจาก LINE → เด้งไปเบราว์เซอร์จริง (กล้องในแอป LINE มักใช้ไม่ได้) */
+if(/\bLine\//i.test(navigator.userAgent)&&!/openExternalBrowser=1/.test(location.search)&&!IN_GAS){
+  location.replace(location.href+(location.search?'&':'?')+'openExternalBrowser=1');
+}
+API.url=ls('apiUrl')||'';API.pin=ls('apiPin')||'';
+function boot(){
+  return run('getBootstrap').then(b=>{BOOT=b;$('#shop').textContent=b.shop;if(!b.hasKey)toast('⚠️ ยังไม่ได้ใส่ Gemini API Key ในชีต',4000)});
+}
+function openSetup(){$('#apiUrl').value=API.url;$('#apiPin').value=API.pin;$('#apiMsg').textContent='';$('#setup').classList.remove('hidden')}
+$('#setBtn').onclick=openSetup;
+$('#setClose').onclick=()=>{if(API.url)$('#setup').classList.add('hidden')};
+$('#apiSave').onclick=async()=>{
+  API.url=$('#apiUrl').value.trim();API.pin=$('#apiPin').value.trim();
+  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(API.url)){$('#apiMsg').textContent='ลิงก์ต้องขึ้นต้นด้วย https://script.google.com/ และลงท้ายด้วย /exec';return}
+  $('#apiSave').disabled=true;$('#apiMsg').innerHTML='<span class="spin"></span> กำลังทดสอบ...';
+  try{await boot();ls('apiUrl',API.url);ls('apiPin',API.pin);$('#setup').classList.add('hidden');toast('✅ เชื่อมต่อสำเร็จ')}
+  catch(e){$('#apiMsg').textContent='❌ '+errMsg(e)}
+  $('#apiSave').disabled=false;
+};
+if(IN_GAS){$('#setBtn').style.display='none';boot().catch(e=>toast(errMsg(e),4000))}
+else if(!API.url)openSetup();
+else boot().catch(e=>{toast(errMsg(e),4000);if(/รหัส/.test(errMsg(e)))openSetup()});
+if(!IN_GAS&&'serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ---------- เปลี่ยนหน้า ---------- */
+$$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function show(v){
+  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  if(v==='list'||v==='exp')loadList();
+  window.scrollTo(0,0);
+}
+
+/* =================== หน้าถ่ายรูป =================== */
+let PH=[]; let COND=ls('cond')||CONDS[1].v;
+function renderConds(){
+  $('#conds').innerHTML=CONDS.map(c=>`<button class="chip ${c.v===COND?'on':''}" data-v="${esc(c.v)}">${esc(LANG==='my'?c.my:c.v)}</button>`).join('');
+  $$('#conds .chip').forEach(b=>b.onclick=()=>{COND=b.dataset.v;ls('cond',COND);renderConds()});
+}
+function resize(file,max=1600,q=.85){
+  return new Promise((ok,ng)=>{
+    const url=URL.createObjectURL(file);const im=new Image();
+    im.onload=()=>{let w=im.naturalWidth,h=im.naturalHeight;const s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);
+      const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);URL.revokeObjectURL(url);ok(c.toDataURL('image/jpeg',q))};
+    im.onerror=()=>{URL.revokeObjectURL(url);ng(new Error('อ่านรูปไม่ได้'))};
+    im.src=url;
+  });
+}
+async function addFiles(files){
+  for(const f of files){
+    if(PH.length>=8){toast(t('max8'));break}
+    try{PH.push(await resize(f))}catch(e){toast(errMsg(e))}
+  }
+  renderThumbs();
+}
+$('#inCam').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+$('#inLib').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+function renderThumbs(){
+  $('#thumbs').innerHTML=PH.map((d,i)=>`<div class="th"><img src="${d}"><button class="x" data-i="${i}">✕</button>${i?`<button class="star" data-i="${i}">⭐</button>`:'<div class="main">หลัก</div>'}</div>`).join('');
+  $$('#thumbs .x').forEach(b=>b.onclick=()=>{PH.splice(+b.dataset.i,1);renderThumbs()});
+  $$('#thumbs .star').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;PH.unshift(PH.splice(i,1)[0]);renderThumbs()});
+}
+$('#qMinus').onclick=()=>{$('#qty').value=Math.max(1,(+$('#qty').value||1)-1)};
+$('#qPlus').onclick=()=>{$('#qty').value=(+$('#qty').value||0)+1};
+$('#inScan').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const h=new Html5Qrcode('qrtmp');const r=await h.scanFile(f,false);$('#sku').value=r;try{h.clear()}catch(_){}}
+  catch(err){toast(t('qrFail'))}
+};
+function sizeStr(){const a=[$('#sL').value,$('#sW').value,$('#sH').value].map(s=>s.trim());return a.some(Boolean)?a.map(x=>x||'?').join('x'):''}
+
+/* คิวอัปโหลด: ถ่ายชิ้นต่อไปได้เลยไม่ต้องรอ */
+const QUEUE=[], FAILED=[]; let PUMPING=false;
+$('#btnSave').onclick=()=>{
+  if(!PH.length)return toast(t('needPhoto'));
+  const staff=$('#staff').value.trim(); if(!staff){$('#staff').focus();return toast(t('needStaff'))}
+  ls('staff',staff);
+  QUEUE.push({photos:PH.slice(),qty:+$('#qty').value||1,price:$('#price').value.trim(),condition:COND,sku:$('#sku').value.trim(),
+    weight:$('#weight').value.trim(),size:sizeStr(),extra:$('#extra').value.trim(),staff,aiNow:$('#aiNow').checked,tries:0});
+  PH=[];renderThumbs();['#price','#sku','#weight','#sL','#sW','#sH','#extra'].forEach(s=>$(s).value='');$('#qty').value=1;
+  window.scrollTo(0,0);renderQueue();pump();
+};
+async function pump(){
+  if(PUMPING)return;PUMPING=true;
+  while(QUEUE.length){
+    const job=QUEUE[0];renderQueue();
+    try{
+      const r=await run('saveProduct',job);
+      QUEUE.shift();toast('✅ '+t('saved')+' '+r.id);
+      if(job.aiNow)run('processProduct',r.id).catch(()=>{});
+    }catch(e){
+      job.tries++;
+      if(job.tries>=3){QUEUE.shift();job.err=errMsg(e);FAILED.push(job)}else await sleep(3000);
+    }
+  }
+  PUMPING=false;renderQueue();
+}
+function renderQueue(){
+  let h='';
+  if(QUEUE.length)h+=`<div class="qitem"><span class="spin"></span> ${t('uploading')} ${QUEUE.length}</div>`;
+  FAILED.forEach((j,i)=>h+=`<div class="qitem" style="color:var(--err)">⚠️ ${t('failed')} (${j.photos.length} 📷) <button class="btn sm" data-i="${i}" style="margin-left:auto">${t('retry')}</button></div>`);
+  $('#qbar').innerHTML=h;
+  $$('#qbar button').forEach(b=>b.onclick=()=>{const j=FAILED.splice(+b.dataset.i,1)[0];j.tries=0;QUEUE.push(j);pump();renderQueue()});
+}
+
+/* =================== หน้ารายการ =================== */
+let LIST=[]; let FILTER='ทั้งหมด'; const STS=['ทั้งหมด','รอ AI','AI กำลังทำ','รอตรวจ','อนุมัติแล้ว','ส่งออกแล้ว','ผิดพลาด'];
+async function loadList(){
+  if(!LIST.length)$('#list').innerHTML='<div class="card"><span class="spin"></span> กำลังโหลด...</div>';
+  try{LIST=await run('listProducts')}catch(e){return toast(errMsg(e),4000)}
+  renderList();renderExpCounts();
+}
+function renderList(){
+  const c={};LIST.forEach(p=>c[p.status]=(c[p.status]||0)+1);
+  $('#filters').innerHTML=STS.map(s=>`<button class="chip ${s===FILTER?'on':''}" data-s="${s}">${s} ${s==='ทั้งหมด'?LIST.length:(c[s]||0)}</button>`).join('');
+  $$('#filters .chip').forEach(b=>b.onclick=()=>{FILTER=b.dataset.s;renderList()});
+  const q=$('#q').value.trim().toLowerCase();
+  const rows=LIST.filter(p=>(FILTER==='ทั้งหมด'||p.status===FILTER)&&(!q||(p.id+' '+(p.name||'')+' '+(p.title||'')).toLowerCase().includes(q)));
+  $('#list').innerHTML=rows.length?rows.map(p=>`<div class="pcard" data-id="${esc(p.id)}">
+    <img src="${img(p.thumb,200)}" loading="lazy">
+    <div class="t"><div class="n">${esc(p.title||p.name||'(ยังไม่ได้ให้ AI ทำ)')}</div>
+    <div class="m">${esc(p.id)} · ${p.qty} ชิ้น${p.price?' · ฿'+p.price:''} · ${esc(p.staff||'')}</div>
+    <span class="badge b-${String(p.status).replace(/\s/g,'')}">${esc(p.status)}</span>
+    ${p.exp.shopee?' 🟠':''}${p.exp.tiktok?' ⚫':''}${p.exp.lazada?' 🔵':''}</div></div>`).join(''):'<div class="card hint">ไม่มีรายการ</div>';
+  $$('.pcard').forEach(e=>e.onclick=()=>openDetail(e.dataset.id));
+  const pend=LIST.filter(p=>p.status==='รอ AI'||p.status==='ผิดพลาด').length;
+  $('#btnRunAll').textContent=`🤖 ให้ AI ทำที่ค้าง (${pend})`;
+  $('#btnRunAll').disabled=RUNNING||!pend;
+}
+$('#q').oninput=renderList;
+$('#btnReload').onclick=loadList;
+let RUNNING=false;
+$('#btnRunAll').onclick=async()=>{
+  const ids=LIST.filter(p=>p.status==='รอ AI'||p.status==='ผิดพลาด').map(p=>p.id);
+  if(!ids.length)return;RUNNING=true;renderList();
+  for(let i=0;i<ids.length;i++){
+    $('#runInfo').innerHTML=`<span class="spin"></span> AI กำลังทำ ${i+1}/${ids.length} (${ids[i]}) — ชิ้นละประมาณ 1-2 นาที`;
+    try{await run('processProduct',ids[i],true)}catch(e){toast(ids[i]+': '+errMsg(e),3000)}
+  }
+  RUNNING=false;$('#runInfo').textContent='เสร็จแล้ว ✅';loadList();
+};
+setInterval(()=>{if($('#v-list').classList.contains('on')&&$('#detail').classList.contains('hidden')&&LIST.some(p=>p.status==='AI กำลังทำ'))loadList()},30000);
+
+/* =================== หน้าตรวจ/แก้ =================== */
+let CUR=null, ORDER=[], PTAB='shopee'; const IMGCACHE={};
+async function openDetail(id){
+  $('#detail').classList.remove('hidden');$('#dTitle').textContent=id;
+  $('#dBody').innerHTML='<div class="card"><span class="spin"></span> กำลังโหลด...</div>';$('#dActions').classList.add('hidden');
+  try{CUR=await run('getProduct',id)}catch(e){$('#dBody').innerHTML=`<div class="note err">${esc(errMsg(e))}</div>`;return}
+  PROG='';initOrder();renderDetail();ensureImages();
+}
+$('#dBack').onclick=()=>{$('#detail').classList.add('hidden');loadList()};
+$('#dDel').onclick=async()=>{
+  if(!CUR||!confirm('ลบสินค้า '+CUR.id+' และรูปทั้งหมด?'))return;
+  await run('deleteProduct',CUR.id);toast('ลบแล้ว');$('#detail').classList.add('hidden');loadList();
+};
+function allImages(){
+  const a=[];
+  if(CUR.img_white)a.push({id:CUR.img_white,tag:'AI พื้นขาว'});
+  if(CUR.img_banner)a.push({id:CUR.img_banner,tag:'AI ป้ายขาย'});
+  if(CUR.img_scene)a.push({id:CUR.img_scene,tag:'AI จัดฉาก'});
+  (CUR.photosArr||[]).forEach((id,i)=>a.push({id,tag:'รูปจริง '+(i+1)}));
+  return a;
+}
+function initOrder(){
+  const have=allImages().map(x=>x.id);
+  ORDER=String(CUR.img_order||'').split(',').filter(x=>x&&have.includes(x));
+  if(!ORDER.length)ORDER=have.slice(0,9);
+}
+function renderDetail(){
+  const c=CUR, busy=c.status==='AI กำลังทำ', notDone=['รอ AI','ผิดพลาด','AI กำลังทำ'].includes(c.status)&&!c.title_shopee;
+  $('#dTitle').textContent=c.id+' · '+c.status;
+  let h='';
+  if(c.error)h+=`<div class="note err">⚠️ ${esc(c.error)}</div>`;
+  if(notDone){
+    h+=`<div class="card"><div class="gal">${(c.photosArr||[]).map(id=>`<div class="gi"><img src="${img(id)}"></div>`).join('')}</div>
+      <div class="note">${busy?'<span class="spin"></span> AI กำลังทำอยู่ รอสักครู่แล้วกดโหลดใหม่':'ยังไม่ได้ให้ AI ทำ'}</div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="dRun">🤖 ให้ AI ทำตอนนี้</button><button class="btn" id="dReload">🔄 โหลดใหม่</button></div></div>`;
+    $('#dBody').innerHTML=h;$('#dActions').classList.add('hidden');
+    $('#dRun').onclick=async()=>{$('#dRun').disabled=true;$('#dRun').innerHTML='<span class="spin"></span> AI กำลังทำ 1-2 นาที...';
+      try{CUR=await run('processProduct',c.id,true);initOrder();renderDetail();ensureImages()}catch(e){toast(errMsg(e),4000);renderDetail()}};
+    $('#dReload').onclick=()=>openDetail(c.id);
+    return;
+  }
+  const imgs=allImages();
+  h+=`<div class="card"><div class="lbl">รูปสินค้า <small>แตะเพื่อเลือก/เรียงลำดับ (รูปที่ 1 = รูปปก) สูงสุด 9 รูป</small></div>
+    <div class="gal">${imgs.map(x=>{const n=ORDER.indexOf(x.id);return `<div class="gi ${n>=0?'on':''}" data-id="${x.id}"><img src="${img(x.id)}" loading="lazy">${n>=0?`<div class="no">${n+1}</div>`:''}<a class="zoom" href="${img(x.id,1600)}" target="_blank">🔍</a><div class="tag">${x.tag}</div></div>`}).join('')}</div>
+    <div id="imgProg" class="${PROG?'note':'hidden'}">${PROG}</div>
+    <div class="lbl">สร้างรูปใหม่จาก <small>รูปจริงใบที่</small></div>
+    <div class="row"><select id="srcIdx" style="flex:0 0 70px">${(c.photosArr||[]).map((_,i)=>`<option value="${i}">${i+1}</option>`).join('')}</select>
+      ${BOOT.whiteMode!=='OFF'?`<button class="btn sm" id="rgWhite">🔄 พื้นขาว</button>`:''}
+      ${BOOT.sceneMode!=='OFF'?`<button class="btn sm" id="rgScene">🔄 จัดฉาก</button>`:''}
+      <button class="btn sm" id="tgBanner">✏️ ป้ายขาย</button></div>
+    ${BOOT.sceneMode==='TEMPLATE'?`<div class="row" style="margin-top:8px"><span style="flex:0 0 auto" class="hint">ฉาก:</span><select id="sceneType">${sceneTypeList().map(n=>`<option ${n===c.scene_type?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
+      ${hasSceneFiles()?'':'<div class="hint">ยังไม่มีรูปฉากในโฟลเดอร์ "ฉากพื้นหลัง" — ใช้ฉากพื้นฐานไปก่อน</div>'}`:''}
+    <div id="bnBox" class="hidden">
+      ${bannerForm(c.bannerObj||{})}
+      <canvas id="bn"></canvas>
+      <div class="row" style="margin-top:8px"><button class="btn" id="bnPreview">👁 ดูตัวอย่าง</button><button class="btn primary" id="bnSave">💾 บันทึกป้าย</button></div>
+    </div></div>`;
+
+  const low=String(c.confidence).toLowerCase()==='low';
+  h+=`<div class="card"><div class="lbl">AI ระบุว่าเป็น</div>
+    <div><b>${esc(c.name)}</b></div>
+    <div class="hint">ยี่ห้อ: ${esc(c.brand)} ${c.model?'· รุ่น: '+esc(c.model):''}<br>หมวดหมู่แนะนำ: ${esc(c.category)}<br>กลุ่มลูกค้า: ${esc(c.target)}<br>ความมั่นใจ: ${esc(c.confidence)}</div>
+    ${c.ai_note||low?`<div class="note">🤔 AI ไม่แน่ใจ: ${esc(c.ai_note||'ความมั่นใจต่ำ ควรตรวจชื่อรุ่น/สเปก')}</div>`:''}
+    <div class="lbl">ข้อมูลเพิ่มเติม <small>แก้แล้วกดให้ AI เขียนใหม่ได้</small></div>
+    <textarea data-k="extra">${esc(c.extra)}</textarea>
+    <button class="btn" id="dRe" style="margin-top:8px">✍️ ให้ AI เขียนข้อความใหม่</button></div>`;
+
+  h+=`<div class="card">
+    <div class="row"><div><div class="lbl">ราคา (฿)</div><input type="number" data-k="price" value="${esc(c.price)}" inputmode="decimal"></div>
+      <div><div class="lbl">จำนวน</div><input type="number" data-k="qty" value="${esc(c.qty)}" inputmode="numeric"></div></div>
+    <div class="row"><div><div class="lbl">SKU</div><input type="text" data-k="sku" value="${esc(c.sku)}"></div>
+      <div><div class="lbl">สภาพ</div><select data-k="condition">${CONDS.map(x=>`<option ${x.v===c.condition?'selected':''}>${esc(x.v)}</option>`).join('')}</select></div></div>
+    <div class="row"><div><div class="lbl">น้ำหนัก (g)</div><input type="number" data-k="weight" value="${esc(c.weight)}"></div>
+      <div><div class="lbl">ขนาด ยxกxส (cm)</div><input type="text" data-k="size" value="${esc(c.size)}"></div></div>
+    ${c.est_flag?`<div class="note">📏 ${esc(c.est_flag)} — ควรชั่ง/วัดจริงเพื่อค่าส่งที่ถูกต้อง</div>`:''}
+    <div class="row"><div><div class="lbl">ยี่ห้อ</div><input type="text" data-k="brand" value="${esc(c.brand)}"></div>
+      <div><div class="lbl">หมวดหมู่</div><input type="text" data-k="category" value="${esc(c.category)}"></div></div>
+  </div>`;
+
+  h+=`<div class="card"><div class="tabs">${['shopee','tiktok','lazada'].map(p=>`<button class="btn sm ${p===PTAB?'primary':''}" data-tab="${p}">${{shopee:'🟠 Shopee',tiktok:'⚫ TikTok',lazada:'🔵 Lazada'}[p]}</button>`).join('')}</div>
+    ${['shopee','tiktok','lazada'].map(p=>`<div class="ptab ${p===PTAB?'':'hidden'}" data-p="${p}">
+      <div class="lbl">ชื่อสินค้า <span class="cnt" data-cnt="title_${p}"></span></div>
+      <textarea data-k="title_${p}" data-max="${BOOT.max[p]}" style="min-height:70px">${esc(c['title_'+p])}</textarea>
+      <div class="lbl">รายละเอียด <span class="cnt" data-cnt="desc_${p}"></span></div>
+      <textarea data-k="desc_${p}" style="min-height:240px">${esc(c['desc_'+p])}</textarea>
+      ${p==='lazada'?`<div class="lbl">จุดเด่น (บรรทัดละข้อ)</div><textarea data-k="highlights">${esc(c.highlights)}</textarea>`:''}
+    </div>`).join('')}
+    <div class="lbl">แฮชแท็ก</div><textarea data-k="hashtags" style="min-height:60px">${esc(c.hashtags)}</textarea>
+    <div class="lbl">คีย์เวิร์ด</div><textarea data-k="keywords" style="min-height:60px">${esc(c.keywords)}</textarea>
+  </div>`;
+  if(c.approved_at)h+=`<div class="hint" style="text-align:center">อนุมัติโดย ${esc(c.approved_by)} · ${esc(c.approved_at)}</div>`;
+
+  $('#dBody').innerHTML=h;$('#dActions').classList.remove('hidden');
+  bindDetail();
+}
+function bannerForm(b){
+  const p=b.points||[];
+  return `<div class="lbl">ป้ายมุมบน</div><input type="text" id="bBadge" value="${esc(b.badge)}">
+  <div class="lbl">หัวข้อใหญ่</div><input type="text" id="bHead" value="${esc(b.headline)}">
+  <div class="lbl">จุดขาย 3 ข้อ</div>
+  <input type="text" id="bP1" value="${esc(p[0])}" style="margin-bottom:6px"><input type="text" id="bP2" value="${esc(p[1])}" style="margin-bottom:6px"><input type="text" id="bP3" value="${esc(p[2])}">
+  <div class="row" style="margin-top:8px"><label class="sw" style="margin:0">สี <input type="color" id="bColor" value="${/^#[0-9a-f]{6}$/i.test(b.color||'')?b.color:'#c2410c'}" style="width:50px;height:36px"></label>
+  <label class="sw" style="margin:0"><input type="checkbox" id="bPrice" ${b.showPrice?'checked':''}> แสดงราคา</label></div>`;
+}
+function readBanner(){return{badge:$('#bBadge').value.trim(),headline:$('#bHead').value.trim(),points:[$('#bP1').value.trim(),$('#bP2').value.trim(),$('#bP3').value.trim()],color:$('#bColor').value,showPrice:$('#bPrice').checked}}
+function bindDetail(){
+  $$('.gi[data-id]').forEach(e=>e.onclick=ev=>{
+    if(ev.target.closest('.zoom'))return;
+    const id=e.dataset.id,i=ORDER.indexOf(id);
+    if(i>=0)ORDER.splice(i,1);else{if(ORDER.length>=9)return toast('สูงสุด 9 รูป');ORDER.push(id)}
+    const keep=gather();renderDetail();restore(keep);
+  });
+  $$('[data-tab]').forEach(b=>b.onclick=()=>{PTAB=b.dataset.tab;$$('[data-tab]').forEach(x=>x.classList.toggle('primary',x.dataset.tab===PTAB));$$('.ptab').forEach(x=>x.classList.toggle('hidden',x.dataset.p!==PTAB))});
+  $$('[data-k]').forEach(e=>e.addEventListener('input',counters));counters();
+  $('#tgBanner').onclick=()=>{$('#bnBox').classList.toggle('hidden');if(!$('#bnBox').classList.contains('hidden'))composeBanner(readBanner(),false)};
+  $('#bnPreview').onclick=()=>composeBanner(readBanner(),false);
+  $('#bnSave').onclick=()=>composeBanner(readBanner(),true);
+  if($('#rgWhite'))$('#rgWhite').onclick=()=>regen('white');
+  if($('#rgScene'))$('#rgScene').onclick=()=>regen('scene');
+  $('#dRe').onclick=async()=>{
+    const b=$('#dRe');b.disabled=true;b.innerHTML='<span class="spin"></span> AI กำลังเขียนใหม่...';
+    try{CUR=await run('reanalyze',CUR.id,$('[data-k=extra]').value);renderDetail();toast('เขียนใหม่แล้ว')}catch(e){toast(errMsg(e),4000);b.disabled=false;b.textContent='✍️ ให้ AI เขียนข้อความใหม่'}
+  };
+}
+function counters(){
+  $$('[data-cnt]').forEach(s=>{const k=s.dataset.cnt,el=$(`[data-k="${k}"]`);if(!el)return;const n=[...el.value].length,m=+el.dataset.max||0;s.textContent=m?`${n}/${m}`:n+' ตัวอักษร';s.classList.toggle('over',m&&n>m)});
+}
+function gather(){const o={};$$('#dBody [data-k]').forEach(e=>o[e.dataset.k]=e.value);return o}
+function restore(o){Object.keys(o).forEach(k=>{const e=$(`#dBody [data-k="${k}"]`);if(e)e.value=o[k]});counters()}
+async function regen(kind){
+  const btn=$(kind==='white'?'#rgWhite':'#rgScene');
+  const idx=+$('#srcIdx').value||0, stype=$('#sceneType')?$('#sceneType').value:CUR.scene_type;
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
+  try{
+    const mode=kind==='white'?BOOT.whiteMode:BOOT.sceneMode;
+    if(mode==='GEMINI'){
+      const keep=gather(),old=CUR['img_'+kind];
+      CUR=await run('regenerateImage',CUR.id,kind,idx);
+      updateOrder(old,CUR['img_'+kind],kind);renderDetail();restore(keep);
+    }else{
+      const cut=await getCut((CUR.photosArr||[])[idx]);
+      if(kind==='white')await saveKind('white',makeWhiteCanvas(cut));
+      else{CUR.scene_type=stype;await saveKind('scene',await makeSceneCanvas(cut,stype))}
+      setProg('');
+    }
+    toast('สร้างรูปใหม่แล้ว');
+    if(kind==='white'&&BOOT.makeBanner&&CUR.bannerObj&&CUR.bannerObj.headline)await composeBanner(CUR.bannerObj,true,true);
+  }catch(e){toast(errMsg(e),4000);setProg('');if(document.body.contains(btn)){btn.disabled=false;btn.textContent=kind==='white'?'🔄 พื้นขาว':'🔄 จัดฉาก'}}
+}
+
+/* ---------- รูปฟรี: ตัดพื้นหลังในเครื่อง + วางบนฉาก ---------- */
+let PROG='', MAKING=false, BGLIB=null; const CUT={};
+function setProg(t){PROG=t;const e=$('#imgProg');if(e){e.innerHTML=t;e.className=t?'note':'hidden'}}
+function updateOrder(oldId,newId,kind){
+  if(!newId)return;const i=oldId?ORDER.indexOf(oldId):-1;
+  if(i>=0){ORDER[i]=newId;return}
+  if(ORDER.includes(newId)||ORDER.length>=9)return;
+  if(kind==='white')ORDER.unshift(newId);else ORDER.splice(Math.min(kind==='banner'?1:2,ORDER.length),0,newId);
+}
+async function saveKind(kind,canvas,bannerJson){
+  const keep=$('#dBody [data-k]')?gather():null,old=CUR['img_'+kind];
+  CUR=await run('saveImage',CUR.id,kind,canvas.toDataURL('image/jpeg',.9),bannerJson||null);
+  updateOrder(old,CUR['img_'+kind],kind);renderDetail();if(keep)restore(keep);
+}
+async function bgLib(){
+  if(!BGLIB){const m=await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');BGLIB=m.removeBackground||m.default}
+  return BGLIB;
+}
+async function getCut(fid){
+  if(!fid)throw new Error('ไม่มีรูปถ่ายจริง');
+  if(CUT[fid])return CUT[fid];
+  setProg('<span class="spin"></span> กำลังเตรียมตัวตัดพื้นหลัง (ครั้งแรกโหลดประมาณ 80 MB ควรใช้ Wi-Fi)...');
+  const removeBg=await bgLib();
+  const src=await dataUrl(fid);
+  const blob=await removeBg(src,{model:'isnet_fp16',output:{format:'image/png'},progress:(k,c,t)=>{
+    if(String(k).startsWith('fetch')&&t)setProg(`<span class="spin"></span> กำลังโหลดตัวตัดพื้นหลัง ${Math.round(c/t*100)}%`);
+    else setProg('<span class="spin"></span> กำลังตัดพื้นหลัง...');
+  }});
+  const u=URL.createObjectURL(blob);const im=await loadImg(u);URL.revokeObjectURL(u);
+  CUT[fid]=trimAlpha(im);setProg('');return CUT[fid];
+}
+function trimAlpha(im){
+  const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.drawImage(im,0,0);
+  const d=x.getImageData(0,0,c.width,c.height).data;let l=c.width,t=c.height,r=-1,b=-1;
+  for(let y=0;y<c.height;y++)for(let i=0;i<c.width;i++)if(d[(y*c.width+i)*4+3]>20){if(i<l)l=i;if(i>r)r=i;if(y<t)t=y;if(y>b)b=y}
+  if(r<0)throw new Error('ตัดพื้นหลังแล้วไม่เจอสินค้า ลองใช้รูปจริงใบอื่น');
+  const o=document.createElement('canvas');o.width=r-l+1;o.height=b-t+1;o.getContext('2d').drawImage(c,l,t,o.width,o.height,0,0,o.width,o.height);return o;
+}
+function shadow(c,cx,cy,rx,ry,a){c.save();c.translate(cx,cy);c.scale(rx,ry);const g=c.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(0,0,1,0,Math.PI*2);c.fill();c.restore()}
+function makeWhiteCanvas(cut){
+  const W=1024,cv=document.createElement('canvas');cv.width=cv.height=W;const c=cv.getContext('2d');
+  c.fillStyle='#fff';c.fillRect(0,0,W,W);
+  const s=Math.min(820/cut.width,800/cut.height),w=cut.width*s,h=cut.height*s,x=(W-w)/2,y=(W-h)/2-10;
+  shadow(c,W/2,y+h-4,w*.42,22,.22);c.drawImage(cut,x,y,w,h);return cv;
+}
+function sceneTypeList(){const k=Object.keys(BOOT.scenes||{});return k.length?k:['ครัว','โต๊ะไม้','ห้องนั่งเล่น','โต๊ะเครื่องแป้ง','ห้องน้ำ','โต๊ะทำงาน','กลางแจ้ง','ทั่วไป']}
+function hasSceneFiles(){return Object.values(BOOT.scenes||{}).some(a=>a&&a.length)}
+function rnd(seed){let s=seed||1;return()=>(s=(s*16807)%2147483647)/2147483647}
+function presetBg(c,type,W){
+  const r=rnd(Math.floor(Math.random()*1e6)+1);const lin=(y0,y1,a,b)=>{const g=c.createLinearGradient(0,y0,0,y1);g.addColorStop(0,a);g.addColorStop(1,b);return g};
+  const p=/ครัว|ห้องน้ำ/.test(type)?'marble':/เครื่องแป้ง/.test(type)?'pink':/กลางแจ้ง/.test(type)?'out':'wood';
+  const H0=W*.62;
+  const wall={marble:['#f6f2ec','#e9e2d8'],pink:['#fdeef0','#f5d6db'],out:['#cfe7fb','#f1f8ff'],wood:['#f8f0e5','#eadac5']}[p];
+  c.fillStyle=lin(0,H0,wall[0],wall[1]);c.fillRect(0,0,W,H0);
+  if(p==='marble'){c.fillStyle=lin(H0,W,'#f7f7f5','#e3e1dc');c.fillRect(0,H0,W,W-H0);
+    c.strokeStyle='rgba(120,120,120,.16)';for(let i=0;i<9;i++){c.lineWidth=1+r()*2;c.beginPath();c.moveTo(r()*W,H0);c.bezierCurveTo(r()*W,H0+r()*200,r()*W,H0+r()*300,r()*W,W);c.stroke()}}
+  else if(p==='pink'){c.fillStyle=lin(H0,W,'#fff7f8','#f2dde1');c.fillRect(0,H0,W,W-H0)}
+  else{c.fillStyle=lin(H0,W,p==='out'?'#b98a5e':'#b9845a',p==='out'?'#8a5f3b':'#8c5b36');c.fillRect(0,H0,W,W-H0);
+    for(let y=H0;y<W;y+=3+r()*6){c.strokeStyle=`rgba(${r()<.5?'60,35,15':'255,230,200'},${.05+r()*.08})`;c.lineWidth=1+r()*2;c.beginPath();c.moveTo(0,y);c.bezierCurveTo(W*.3,y+r()*6-3,W*.7,y+r()*6-3,W,y+r()*4-2);c.stroke()}
+    if(p==='out'){c.fillStyle='rgba(120,170,100,.35)';for(let i=0;i<14;i++){c.beginPath();c.arc(r()*W,H0-20-r()*120,40+r()*70,0,Math.PI*2);c.fill()}}}
+  c.fillStyle='rgba(0,0,0,.06)';c.fillRect(0,H0,W,4);
+  const v=c.createRadialGradient(W/2,W*.55,W*.3,W/2,W*.55,W*.8);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.12)');c.fillStyle=v;c.fillRect(0,0,W,W);
+}
+async function makeSceneCanvas(cut,type){
+  const W=1024,cv=document.createElement('canvas');cv.width=cv.height=W;const c=cv.getContext('2d');
+  const S=BOOT.scenes||{};let pool=S[type]||[];
+  if(!pool.length)pool=S['ทั่วไป']||[];
+  if(!pool.length)pool=[].concat(...Object.values(S));
+  if(pool.length){
+    const bg=await loadImg(await dataUrl(pool[Math.floor(Math.random()*pool.length)]));
+    const s=Math.max(W/bg.width,W/bg.height);c.drawImage(bg,(W-bg.width*s)/2,(W-bg.height*s)/2,bg.width*s,bg.height*s);
+  }else presetBg(c,type||'',W);
+  const s=Math.min(W*.7/cut.width,W*.58/cut.height),w=cut.width*s,h=cut.height*s,base=W*.88,x=(W-w)/2;
+  shadow(c,W/2,base-3,w*.48,W*.035,.38);c.drawImage(cut,x,base-h,w,h);return cv;
+}
+async function ensureImages(){
+  if(MAKING||!CUR||!(CUR.title_shopee||CUR.name))return;MAKING=true;
+  try{
+    const src=(CUR.photosArr||[])[0];
+    const needW=BOOT.whiteMode==='BROWSER'&&!CUR.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!CUR.img_scene;
+    if((needW||needS)&&src){
+      const cut=await getCut(src);
+      if(needW)await saveKind('white',makeWhiteCanvas(cut));
+      if(needS)await saveKind('scene',await makeSceneCanvas(cut,CUR.scene_type));
+    }
+    if(BOOT.makeBanner&&CUR.img_white&&!CUR.img_banner&&CUR.bannerObj&&CUR.bannerObj.headline)await composeBanner(CUR.bannerObj,true,true);
+    setProg('');
+  }catch(e){setProg('⚠️ ทำรูปไม่สำเร็จ: '+esc(errMsg(e))+' — กด 🔄 เพื่อลองใหม่')}
+  finally{MAKING=false}
+}
+async function dataUrl(id){if(!IMGCACHE[id])IMGCACHE[id]=await run('getImageDataUrl',id);return IMGCACHE[id]}
+async function composeBanner(b,save,silent){
+  const src=CUR.img_white||(CUR.photosArr||[])[0];if(!src)return;
+  let cv=$('#bn');if(!cv){cv=document.createElement('canvas')}
+  await drawBanner(cv,await dataUrl(src),b,CUR.shop,b.showPrice?CUR.price:'');
+  if(!save)return;
+  await saveKind('banner',cv,JSON.stringify(b));
+  if(!silent)toast('บันทึกป้ายแล้ว');
+}
+
+/* ---------- วาดรูปป้ายขาย ---------- */
+function loadImg(src){return new Promise((ok,ng)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ng;i.src=src})}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function fit(c,text,weight,x,y,maxW,size,align,min){min=min||20;let s=size;do{c.font=`${weight} ${s}px Kanit, sans-serif`;if(c.measureText(text).width<=maxW)break;s-=2}while(s>min);c.textAlign=align;c.fillText(text,x,y);return s}
+function lum(hex){const m=String(hex).replace('#','');const n=parseInt(m.length===3?m.split('').map(x=>x+x).join(''):m,16);if(isNaN(n))return 0;return(0.299*((n>>16)&255)+0.587*((n>>8)&255)+0.114*(n&255))/255}
+async function drawBanner(cv,src,b,shop,price){
+  try{await Promise.all([document.fonts.load('700 60px Kanit'),document.fonts.load('500 40px Kanit'),document.fonts.load('400 24px Kanit')])}catch(e){}
+  const W=1024,H=1024;cv.width=W;cv.height=H;const c=cv.getContext('2d');c.textBaseline='middle';
+  c.fillStyle='#fff';c.fillRect(0,0,W,H);
+  const im=await loadImg(src);const top=110,areaH=600;const s=Math.min((W-80)/im.width,areaH/im.height);const w=im.width*s,h=im.height*s;
+  c.drawImage(im,(W-w)/2,top+(areaH-h)/2,w,h);
+  const col=/^#[0-9a-f]{3,6}$/i.test(b.color||'')?b.color:'#c2410c';const fg=lum(col)>0.62?'#111':'#fff';
+  c.fillStyle=col;rr(c,24,728,W-48,262,36);c.fill();
+  c.fillStyle=fg;fit(c,b.headline||'','700',W/2,788,W-110,62,'center',30);
+  (b.points||[]).filter(Boolean).slice(0,3).forEach((p,i)=>{
+    const y=860+i*48;c.fillStyle=fg;c.beginPath();c.arc(84,y,15,0,Math.PI*2);c.fill();
+    c.strokeStyle=col;c.lineWidth=5;c.lineCap='round';c.beginPath();c.moveTo(76,y);c.lineTo(82,y+6);c.lineTo(93,y-6);c.stroke();
+    c.fillStyle=fg;fit(c,p,'500',112,y,W-112-60,38,'left',22);
+  });
+  if(b.badge){c.font='700 40px Kanit, sans-serif';const tw=Math.min(c.measureText(b.badge).width,W-420);c.fillStyle=col;rr(c,32,30,tw+64,70,35);c.fill();c.fillStyle=fg;fit(c,b.badge,'700',64,66,W-420,40,'left',24)}
+  if(price){c.fillStyle='#dc2626';c.beginPath();c.arc(W-120,120,90,0,Math.PI*2);c.fill();c.fillStyle='#fff';fit(c,'฿'+Number(price).toLocaleString(),'700',W-120,120,150,52,'center',26)}
+  if(shop){c.fillStyle='#9ca3af';fit(c,shop,'400',W/2,1008,W-100,22,'center',16)}
+}
+
+/* ---------- บันทึก / อนุมัติ ---------- */
+$('#dSave').onclick=async()=>{
+  const b=$('#dSave');b.disabled=true;
+  try{CUR=await run('updateProduct',CUR.id,Object.assign(gather(),{img_order:ORDER.join(',')}));toast('บันทึกแล้ว')}catch(e){toast(errMsg(e),4000)}
+  b.disabled=false;
+};
+$('#dApprove').onclick=async()=>{
+  const g=gather();
+  if(!ORDER.length)return toast('เลือกรูปอย่างน้อย 1 รูป');
+  if(!g.title_shopee&&!g.title_tiktok&&!g.title_lazada)return toast('ยังไม่มีชื่อสินค้า');
+  const over=['shopee','tiktok','lazada'].filter(p=>[...(g['title_'+p]||'')].length>BOOT.max[p]);
+  if(over.length&&!confirm('ชื่อสินค้ายาวเกินกำหนด: '+over.join(', ')+'\nอนุมัติต่อไหม?'))return;
+  if(!g.price&&!confirm('ยังไม่ใส่ราคา อนุมัติต่อไหม?'))return;
+  const b=$('#dApprove');b.disabled=true;
+  try{CUR=await run('approveProduct',CUR.id,Object.assign(g,{img_order:ORDER.join(',')}),$('#staff').value.trim());toast('✅ อนุมัติแล้ว');
+    $('#detail').classList.add('hidden');loadList()}catch(e){toast(errMsg(e),4000)}
+  b.disabled=false;
+};
+
+/* =================== หน้าส่งออก =================== */
+function renderExpCounts(){
+  const inc=$('#incExp').checked;
+  ['shopee','tiktok','lazada'].forEach(p=>{
+    const n=LIST.filter(x=>(x.status==='อนุมัติแล้ว'||x.status==='ส่งออกแล้ว')&&(inc||!x.exp[p])).length;
+    $('#c-'+p).textContent=n+' ชิ้น';
+  });
+}
+$('#incExp').onchange=renderExpCounts;
+$$('.exbtn').forEach(b=>b.onclick=async()=>{
+  const p=b.dataset.p;b.disabled=true;const old=b.innerHTML;b.innerHTML='<span class="spin"></span> กำลังสร้างไฟล์...';
+  try{
+    const r=await run('exportPlatform',p,$('#incExp').checked);
+    const name={shopee:'Shopee',tiktok:'TikTok Shop',lazada:'Lazada'}[p];
+    $('#expOut').insertAdjacentHTML('afterbegin',r.count?`<div class="card"><b>${name}</b> — ${r.count} ชิ้น<br>
+      ${r.xlsx?`<a href="${r.xlsx}" target="_blank">⬇️ ดาวน์โหลด Excel</a> · `:''}<a href="${r.sheetUrl}" target="_blank">เปิดใน Google Sheet</a></div>`
+      :`<div class="card hint">${name}: ไม่มีสินค้าที่อนุมัติรอส่งออก</div>`);
+    loadList();
+  }catch(e){toast(errMsg(e),4000)}
+  b.disabled=false;b.innerHTML=old;
+});
+
+applyLang();renderThumbs();
+</script>
+</body>
+</html>
