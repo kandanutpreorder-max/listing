@@ -169,6 +169,7 @@ a{color:var(--brand)}
       <button class="btn" id="btnReload" style="flex:0 0 52px">🔄</button>
     </div>
     <div class="hint" id="runInfo"></div>
+    <button class="btn" id="btnNight" style="width:100%;margin-top:10px;background:#1e1b4b;color:#fff">🌙 โหมดทำงานทั้งคืน (ข้อความ + รูป อัตโนมัติ)</button>
   </div>
   <div id="list"></div>
 </section>
@@ -205,6 +206,29 @@ a{color:var(--brand)}
 
 <div id="qrtmp" style="display:none"></div>
 <div id="toast"></div>
+
+<!-- โหมดทำงานทั้งคืน -->
+<div class="sheet hidden" id="night" style="background:#0f0d2e;color:#e0e7ff">
+  <div class="top" style="background:#1e1b4b"><b>🌙 โหมดทำงานทั้งคืน</b></div>
+  <main>
+    <div class="card" style="background:#1e1b4b;color:#e0e7ff">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:6px">
+        <div><div style="font-size:28px;font-weight:700" id="nText">0</div><div class="hint" style="color:#a5b4fc">เขียนข้อความ</div></div>
+        <div><div style="font-size:28px;font-weight:700" id="nImg">0</div><div class="hint" style="color:#a5b4fc">ทำรูปครบ</div></div>
+        <div><div style="font-size:28px;font-weight:700" id="nErr">0</div><div class="hint" style="color:#a5b4fc">ข้าม/ผิดพลาด</div></div>
+      </div>
+      <div id="nNow" style="margin-top:12px;text-align:center"></div>
+    </div>
+    <div class="card" style="background:#1e1b4b;color:#c7d2fe;font-size:13px">
+      • เสียบสายชาร์จไว้ และเปิดหน้านี้ค้างไว้ (ปิดจอเองไม่ได้ ระบบกันจอดับให้)<br>
+      • แนะนำใช้คอมพิวเตอร์ + Chrome จะเร็วกว่ามือถือ<br>
+      • สินค้าที่ถ่ายเพิ่มระหว่างคืน ระบบจะหยิบมาทำต่อเอง<br>
+      • ถ้าโควตา AI ฟรีหมด ระบบจะรอแล้วลองใหม่เอง
+    </div>
+    <div class="card" style="background:#0b0a24;color:#a5b4fc;font-size:12px;max-height:40vh;overflow:auto;font-family:monospace" id="nLog"></div>
+    <button class="btn xl" id="nStop" style="background:#ef4444;color:#fff">⏹ หยุด</button>
+  </main>
+</div>
 
 <!-- ตั้งค่าการเชื่อมต่อ (เฉพาะเวอร์ชันบน GitHub) -->
 <div class="sheet hidden" id="setup">
@@ -721,6 +745,75 @@ $$('.exbtn').forEach(b=>b.onclick=async()=>{
   }catch(e){toast(errMsg(e),4000)}
   b.disabled=false;b.innerHTML=old;
 });
+
+/* =================== โหมดทำงานทั้งคืน =================== */
+let NIGHT=false, WAKE=null; const NTRY={}; const NC={t:0,i:0,e:0};
+const BUSY=/503|500|429|โควตา|UNAVAILABLE|RESOURCE_EXHAUSTED|high demand/i;
+function nlog(t){const d=new Date();const ts=d.toTimeString().slice(0,5);const e=$('#nLog');e.insertAdjacentHTML('afterbegin',`<div>[${ts}] ${esc(t)}</div>`);while(e.children.length>300)e.lastChild.remove()}
+function nstat(now){$('#nText').textContent=NC.t;$('#nImg').textContent=NC.i;$('#nErr').textContent=NC.e;if(now!==undefined)$('#nNow').innerHTML=now}
+async function wake(){try{if('wakeLock' in navigator&&NIGHT)WAKE=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(NIGHT&&document.visibilityState==='visible')wake()});
+async function nwait(ms,msg){const end=Date.now()+ms;while(NIGHT&&Date.now()<end){nstat(`${msg} (อีก ${Math.ceil((end-Date.now())/60000)} นาที)`);await sleep(5000)}}
+function needImgs(p){return (BOOT.whiteMode==='BROWSER'&&!p.imgs.w)||(BOOT.sceneMode==='TEMPLATE'&&!p.imgs.s)||(BOOT.makeBanner&&!p.imgs.b)}
+async function nightImages(id){
+  let p=await run('getProduct',id);const src=(p.photosArr||[])[0];if(!src)return false;
+  const needW=BOOT.whiteMode==='BROWSER'&&!p.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!p.img_scene;
+  if(needW||needS){
+    const cut=await getCut(src);
+    if(needW)p=await run('saveImage',id,'white',makeWhiteCanvas(cut).toDataURL('image/jpeg',.9),null);
+    if(needS)p=await run('saveImage',id,'scene',(await makeSceneCanvas(cut,p.scene_type)).toDataURL('image/jpeg',.9),null);
+    delete CUT[src];
+  }
+  if(BOOT.makeBanner&&p.img_white&&!p.img_banner&&p.bannerObj&&p.bannerObj.headline){
+    const cv=document.createElement('canvas');await drawBanner(cv,await dataUrl(p.img_white),p.bannerObj,p.shop,'');
+    p=await run('saveImage',id,'banner',cv.toDataURL('image/jpeg',.9),JSON.stringify(p.bannerObj));
+  }
+  // คืนหน่วยความจำ (เก็บไว้เฉพาะรูปฉาก)
+  const keep=new Set([].concat(...Object.values(BOOT.scenes||{})));
+  Object.keys(IMGCACHE).forEach(k=>{if(!keep.has(k))delete IMGCACHE[k]});
+  return true;
+}
+async function nightLoop(){
+  NIGHT=true;$('#night').classList.remove('hidden');await wake();nlog('เริ่มทำงาน');
+  while(NIGHT){
+    let list;
+    try{list=await run('listProducts')}catch(e){nlog('โหลดรายการไม่ได้: '+errMsg(e));await nwait(60000,'รอเน็ต');continue}
+    const tries=id=>NTRY[id]||0;
+    const text=list.filter(p=>(p.status==='รอ AI'||(p.status==='ผิดพลาด'&&!p.title))&&tries(p.id)<4).reverse();
+    const imgs=list.filter(p=>p.title&&['รอตรวจ','อนุมัติแล้ว','ผิดพลาด'].includes(p.status)&&needImgs(p)&&tries('img'+p.id)<2).reverse();
+    if(!text.length&&!imgs.length){await nwait(120000,'✅ ทำครบแล้ว รอสินค้าใหม่');continue}
+    let pause=0;
+    for(const p of text){
+      if(!NIGHT)break;
+      nstat(`<span class="spin"></span> AI เขียนข้อความ ${p.id} (เหลือ ${text.length})`);
+      try{
+        const r=await run('processProduct',p.id);
+        if(r.status==='AI กำลังทำ'||r.status==='รอ AI'){nlog(`${p.id}: ระบบเบื้องหลังกำลังทำอยู่ ข้ามไปก่อน`);continue}
+        if(r.status==='ผิดพลาด'&&!r.title_shopee){
+          NTRY[p.id]=tries(p.id)+1;
+          if(BUSY.test(r.error||'')){nlog(`${p.id}: AI คนใช้เยอะ/โควตาเต็ม — พักก่อน`);pause=10*60000;break}
+          NC.e++;nlog(`${p.id}: ${String(r.error||'').slice(0,120)}`);continue;
+        }
+        NC.t++;nlog(`${p.id}: ✍️ ${String(r.title_shopee||r.name||'').slice(0,60)}`);
+        if(needImgs({imgs:{w:!!r.img_white,s:!!r.img_scene,b:!!r.img_banner}})){
+          nstat(`<span class="spin"></span> ทำรูป ${p.id}`);
+          await nightImages(p.id);NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`);
+        }
+      }catch(e){NTRY[p.id]=tries(p.id)+1;NC.e++;nlog(`${p.id}: ${errMsg(e).slice(0,120)}`)}
+      nstat();
+    }
+    if(pause){await nwait(pause,'⏳ โควตา AI เต็ม/คนใช้เยอะ รอลองใหม่');continue}
+    for(const p of imgs){
+      if(!NIGHT)break;
+      nstat(`<span class="spin"></span> ทำรูป ${p.id}`);
+      try{await nightImages(p.id);NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`)}
+      catch(e){NTRY['img'+p.id]=tries('img'+p.id)+1;NC.e++;nlog(`${p.id} รูป: ${errMsg(e).slice(0,120)}`)}
+      nstat();
+    }
+  }
+}
+$('#btnNight').onclick=()=>{if(!NIGHT)nightLoop()};
+$('#nStop').onclick=()=>{NIGHT=false;try{WAKE&&WAKE.release()}catch(e){}WAKE=null;nlog('หยุดแล้ว');$('#night').classList.add('hidden');loadList()};
 
 applyLang();renderThumbs();
 </script>
