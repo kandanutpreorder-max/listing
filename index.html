@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-32.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=Pattaya&family=Sriracha&family=Mitr:wght@400;600&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root{--brand:#c2410c;--brand2:#fb923c;--bg:#fff7ed;--card:#fff;--ink:#1f2937;--mute:#6b7280;--line:#fed7aa;--ok:#16a34a;--warn:#ca8a04;--err:#dc2626}
@@ -535,7 +535,7 @@ function allImages(){
 function initOrder(){
   const have=allImages().map(x=>x.id);
   ORDER=String(CUR.img_order||'').split(',').filter(x=>x&&have.includes(x));
-  if(!ORDER.length)ORDER=have.slice(0,9);
+  if(!ORDER.length){ORDER=have.slice(0,9);if(CUR.img_frame){ORDER=[CUR.img_frame].concat(ORDER.filter(x=>x!==CUR.img_frame))}}
 }
 function renderDetail(){
   const c=CUR, busy=c.status==='AI กำลังทำ', notDone=['รอ AI','ผิดพลาด','AI กำลังทำ'].includes(c.status)&&!c.title_shopee;
@@ -643,7 +643,9 @@ function promptsHtml(c){
 }
 function bannerForm(b){
   const p=b.points||[];
-  return `<div class="lbl">ป้ายมุมบน</div><input type="text" id="bBadge" value="${esc(b.badge)}">
+  return `<div class="lbl">แบบป้าย</div><select id="bTpl"><option value="">อัตโนมัติ (AI เลือก)</option>${Object.entries(TPLS).map(([k,v])=>`<option value="${k}" ${b.template===k?'selected':''}>${v}</option>`).join('')}</select>
+  <div class="row" style="margin-top:6px"><div><div class="lbl">หัวข้อเล็ก</div><input type="text" id="bHs" value="${esc(b.headline_small||'')}"></div><div><div class="lbl">คำเด่นตัวใหญ่</div><input type="text" id="bHb" value="${esc(b.headline_big||'')}"></div></div>
+  <div class="lbl">ป้ายมุมบน</div><input type="text" id="bBadge" value="${esc(b.badge)}">
   <div class="lbl">หัวข้อใหญ่</div><input type="text" id="bHead" value="${esc(b.headline)}">
   <div class="lbl">คำกระตุ้นซื้อ <small>(ใช้ในรูปกรอบเพจ)</small></div><input type="text" id="bHook" value="${esc(b.hook)}">
   <div class="lbl">จุดขาย 3 ข้อ</div>
@@ -651,7 +653,7 @@ function bannerForm(b){
   <div class="row" style="margin-top:8px"><label class="sw" style="margin:0">สี <input type="color" id="bColor" value="${/^#[0-9a-f]{6}$/i.test(b.color||'')?b.color:'#c2410c'}" style="width:50px;height:36px"></label>
   <label class="sw" style="margin:0"><input type="checkbox" id="bPrice" ${b.showPrice?'checked':''}> แสดงราคา</label></div>`;
 }
-function readBanner(){return{badge:$('#bBadge').value.trim(),hook:$('#bHook').value.trim(),headline:$('#bHead').value.trim(),points:[$('#bP1').value.trim(),$('#bP2').value.trim(),$('#bP3').value.trim()],color:$('#bColor').value,showPrice:$('#bPrice').checked}}
+function readBanner(){return{template:$('#bTpl').value,headline_small:$('#bHs').value.trim(),headline_big:$('#bHb').value.trim(),badge:$('#bBadge').value.trim(),hook:$('#bHook').value.trim(),headline:$('#bHead').value.trim(),points:[$('#bP1').value.trim(),$('#bP2').value.trim(),$('#bP3').value.trim()],color:$('#bColor').value,showPrice:$('#bPrice').checked}}
 function bindDetail(){
   $$('.gi[data-id]').forEach(e=>e.onclick=ev=>{
     if(ev.target.closest('.zoom'))return;
@@ -727,7 +729,7 @@ function updateOrder(oldId,newId,kind){
   if(!newId)return;const i=oldId?ORDER.indexOf(oldId):-1;
   if(i>=0){ORDER[i]=newId;return}
   if(ORDER.includes(newId)||ORDER.length>=9)return;
-  if(kind==='white')ORDER.unshift(newId);else ORDER.splice(Math.min(kind==='banner'?1:2,ORDER.length),0,newId);
+  if(kind==='frame'||kind==='white'&&!CUR.img_frame)ORDER.unshift(newId);else if(kind==='white')ORDER.splice(Math.min(1,ORDER.length),0,newId);else ORDER.splice(Math.min(kind==='banner'?1:2,ORDER.length),0,newId);
 }
 async function saveKind(kind,canvas,bannerJson){
   const keep=$('#dBody [data-k]')?gather():null,old=CUR['img_'+kind];
@@ -982,7 +984,7 @@ async function dataUrl(id){if(!IMGCACHE[id])IMGCACHE[id]=await run('getImageData
 async function composeBanner(b,save,silent){
   const src=CUR.img_white||(CUR.photosArr||[])[0];if(!src)return;
   let cv=$('#bn');if(!cv){cv=document.createElement('canvas')}
-  await drawBanner(cv,await dataUrl(src),b,CUR.shop,b.showPrice?CUR.price:'');
+  await drawBanner(cv,await dataUrl(src),b,CUR.shop,b.showPrice?CUR.price:'',null,CUR.id);
   if(!save)return;
   await saveKind('banner',cv,JSON.stringify(b));
   if(!silent)toast('บันทึกป้ายแล้ว');
@@ -1001,31 +1003,97 @@ function trimWhite(im){
   if(r<0)return c;
   const o=document.createElement('canvas');o.width=r-l+1;o.height=b-t+1;o.getContext('2d').drawImage(c,l,t,o.width,o.height,0,0,o.width,o.height);return o;
 }
-async function drawBanner(cv,src,b,shop,price){
-  try{await Promise.all([document.fonts.load('700 60px Kanit'),document.fonts.load('500 40px Kanit'),document.fonts.load('400 24px Kanit')])}catch(e){}
-  const W=1024,H=1024;cv.width=W;cv.height=H;const c=cv.getContext('2d');c.textBaseline='middle';
-  const col=/^#[0-9a-f]{3,6}$/i.test(b.color||'')?b.color:'#c2410c';const fg=lum(col)>0.62?'#111':'#fff';
-  // พื้นหลัง: ขาวไล่เฉดอ่อนๆ ตามสีหลัก
-  const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#ffffff');g.addColorStop(1,'#f5f3f0');c.fillStyle=g;c.fillRect(0,0,W,H);
-  c.save();c.globalAlpha=.07;c.fillStyle=col;c.beginPath();c.arc(W*.5,H*.45,W*.42,0,Math.PI*2);c.fill();c.restore();
-  // สินค้า: ใหญ่ เต็มพื้นที่ด้านบน
-  const prod=trimWhite(await loadImg(src));
-  const s=Math.min((W-120)/prod.width,640/prod.height),w=prod.width*s,h=prod.height*s;
-  c.save();c.globalCompositeOperation='multiply';   // พื้นขาวของรูปกลืนไปกับพื้นหลัง
-  c.drawImage(prod,(W-w)/2,120+(640-h)/2,w,h);c.restore();
-  // แถบล่าง: หัวข้อ + จุดขาย 3 ข้อแบบชิป
-  c.fillStyle=col;rr(c,24,790,W-48,206,30);c.fill();
-  c.fillStyle=fg;fit(c,b.headline||'','700',W/2,842,W-100,56,'center',28);
-  const pts=(b.points||[]).filter(Boolean).slice(0,3);
-  if(pts.length){
-    const gap=14,cw=(W-48-40-gap*(pts.length-1))/pts.length;
-    pts.forEach((p,i)=>{const x=44+i*(cw+gap);
-      c.fillStyle=fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.08)';rr(c,x,902,cw,64,32);c.fill();
-      c.fillStyle=fg;fit(c,'✓ '+p,'500',x+cw/2,935,cw-28,30,'center',18);});
+/* ===== ป้ายจุดขาย 4 แบบ (แรงบันดาลใจจากโปสเตอร์โปรโมทสินค้า) ===== */
+const TPLS={pop:'ป๊อปสีสด',soft:'พาสเทลละมุน',benefit:'ลิสต์จุดเด่น',burst:'โปรแรง'};
+function hex2rgb(h){h=String(h||'#c2410c').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');const n=parseInt(h,16)||0xc2410c;return[(n>>16)&255,(n>>8)&255,n&255]}
+function mix(h,t,a){const c=hex2rgb(h),d=hex2rgb(t);return'rgb('+c.map((v,i)=>Math.round(v*(1-a)+d[i]*a)).join(',')+')'}
+const tint=(h,a)=>mix(h,'#ffffff',a),shade=(h,a)=>mix(h,'#000000',a);
+/* รูปพื้นขาว → สินค้าพื้นโปร่งใส (เติมจากขอบรูป เก็บส่วนสีขาวในตัวสินค้าไว้) */
+function whiteToCut(im){
+  const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+  const W=c.width,H=c.height,img=x.getImageData(0,0,W,H),d=img.data,bg=new Uint8Array(W*H),st=[];
+  const isBg=i=>{const r=d[i*4],g=d[i*4+1],b=d[i*4+2];return Math.min(r,g,b)>222&&Math.max(r,g,b)-Math.min(r,g,b)<14};
+  for(let i=0;i<W;i++){st.push(i,(H-1)*W+i)}for(let y=0;y<H;y++){st.push(y*W,y*W+W-1)}
+  while(st.length){const k=st.pop();if(bg[k]||!isBg(k))continue;bg[k]=1;const y=k/W|0,xx=k%W;if(xx>0)st.push(k-1);if(xx<W-1)st.push(k+1);if(y>0)st.push(k-W);if(y<H-1)st.push(k+W)}
+  for(let i=0;i<W*H;i++)if(bg[i])d[i*4+3]=0;
+  x.putImageData(img,0,0);return trimAlpha(refineEdges(c));
+}
+function sparkle(c,x,y,r,col){c.save();c.fillStyle=col;c.beginPath();c.moveTo(x,y-r);c.quadraticCurveTo(x,y,x+r,y);c.quadraticCurveTo(x,y,x,y+r);c.quadraticCurveTo(x,y,x-r,y);c.quadraticCurveTo(x,y,x,y-r);c.fill();c.restore()}
+function blob(c,x,y,r,col,seed){const R=rnd(seed||7);c.save();c.fillStyle=col;c.beginPath();const n=8,pts=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2,rr=r*(.82+R()*.3);pts.push([x+Math.cos(a)*rr,y+Math.sin(a)*rr])}
+  c.moveTo((pts[0][0]+pts[n-1][0])/2,(pts[0][1]+pts[n-1][1])/2);for(let i=0;i<n;i++){const p=pts[i],q=pts[(i+1)%n];c.quadraticCurveTo(p[0],p[1],(p[0]+q[0])/2,(p[1]+q[1])/2)}c.fill();c.restore()}
+function tx(c,text,x,y,o){o=o||{};let s=o.size||40;const fam=o.font||'Kanit',w=o.weight||700,max=o.max||900;
+  do{c.font=`${w} ${s}px ${fam}, Kanit, sans-serif`;if(c.measureText(text).width<=max)break;s-=2}while(s>(o.min||16));
+  c.save();c.textAlign=o.align||'left';c.textBaseline='middle';c.lineJoin='round';
+  if(o.rot){c.translate(x,y);c.rotate(o.rot*Math.PI/180);x=0;y=0}
+  if(o.shadow){c.shadowColor=o.shadow;c.shadowBlur=o.blur||0;c.shadowOffsetY=o.sy==null?6:o.sy}
+  if(o.stroke){c.lineWidth=o.sw||10;c.strokeStyle=o.stroke;c.strokeText(text,x,y);c.shadowColor='transparent'}
+  c.fillStyle=o.fill||'#111';c.fillText(text,x,y);c.restore();return s}
+function wrapTH(c,text,max,font){c.font=font;const seg=typeof Intl!=='undefined'&&Intl.Segmenter?[...new Intl.Segmenter('th',{granularity:'word'}).segment(text)].map(x=>x.segment):text.split(/(\s+)/);
+  const lines=[];let cur='';for(const w of seg){if(c.measureText(cur+w).width>max&&cur.trim()){lines.push(cur.trim());cur=w.trimStart()}else cur+=w}if(cur.trim())lines.push(cur.trim());return lines}
+function checkIcon(c,x,y,r,bg,fg){c.save();c.fillStyle=bg;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();c.strokeStyle=fg;c.lineWidth=r*.28;c.lineCap='round';c.lineJoin='round';c.beginPath();c.moveTo(x-r*.42,y+r*.02);c.lineTo(x-r*.1,y+r*.34);c.lineTo(x+r*.45,y-r*.3);c.stroke();c.restore()}
+function sticker(c,x,y,r,bg,lines,fg,rot){c.save();c.translate(x,y);c.rotate((rot||8)*Math.PI/180);c.fillStyle=bg;c.beginPath();for(let i=0;i<28;i++){const rr=i%2?r*.9:r,a=i*Math.PI/14;c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}c.closePath();c.shadowColor='rgba(0,0,0,.2)';c.shadowBlur=14;c.shadowOffsetY=5;c.fill();c.shadowColor='transparent';
+  c.setLineDash([6,6]);c.strokeStyle='rgba(255,255,255,.8)';c.lineWidth=3;c.beginPath();c.arc(0,0,r*.74,0,Math.PI*2);c.stroke();c.setLineDash([]);
+  lines.forEach((l,i)=>tx(c,l.t,0,(i-(lines.length-1)/2)*r*.42,{size:l.s||r*.36,max:r*1.35,align:'center',fill:fg,weight:800}));c.restore()}
+function splitHead(b){if(b.headline_big)return{small:b.headline_small||'',big:b.headline_big};const h=String(b.headline||'').trim();const i=h.lastIndexOf(' ');return i>3&&h.length-i>2?{small:h.slice(0,i),big:h.slice(i+1)}:{small:'',big:h}}
+function pickTpl(b,seed){const t=b.template;if(TPLS[t])return t;const k=Object.keys(TPLS);let h=0;String(seed||b.headline||'').split('').forEach(ch=>h=(h*31+ch.charCodeAt(0))>>>0);return k[h%k.length]}
+async function drawBanner(cv,src,b,shop,price,cutIn,seed){
+  try{await Promise.all(['800 80px Kanit','600 40px Kanit','400 60px Pattaya','400 60px Sriracha','600 40px Mitr'].map(f=>document.fonts.load(f)))}catch(e){}
+  const W=1024;cv.width=cv.height=W;const c=cv.getContext('2d');
+  const cut=cutIn||whiteToCut(await loadImg(src));
+  const col=/^#[0-9a-f]{3,6}$/i.test(b.color||'')?b.color:'#e85d8a',dark=shade(col,.45),pale=tint(col,.86),Y='#ffd23f';
+  const hd=splitHead(b),pts=(b.points||[]).filter(Boolean).slice(0,3),hook=b.hook||'',badge=b.badge||'';
+  const tpl=pickTpl(b,seed);const R=rnd(7);
+  const prod=(x,y,mw,mh,sh)=>{const e=elong(cut),tall=cut.height>cut.width;return placeCut(c,cut,x,y,mw,mh,e>=4?(tall?35:-35):0,sh==null?.25:sh)};
+  if(tpl==='pop'){
+    c.fillStyle=pale;c.fillRect(0,0,W,W);
+    c.fillStyle=tint(col,.7);for(let y=40;y<300;y+=34)for(let x=40;x<300;x+=34){c.beginPath();c.arc(x,y,4,0,7);c.fill()}
+    c.fillStyle=col;c.beginPath();c.moveTo(W*.42,W);c.lineTo(W,W*.28);c.lineTo(W,W);c.closePath();c.fill();
+    c.fillStyle=tint(col,.55);c.beginPath();c.arc(680,640,280,0,7);c.fill();
+    prod(680,640,480,500,.28);
+    if(hd.small)tx(c,hd.small,60,110,{size:44,weight:600,fill:dark,max:560,font:'Mitr'});
+    tx(c,hd.big,56,hd.small?220:170,{size:120,font:'Pattaya',weight:400,fill:col,stroke:'#fff',sw:16,shadow:'rgba(0,0,0,.18)',sy:8,max:620});
+    if(hook){c.save();c.translate(60,315);c.rotate(-5*Math.PI/180);c.font='700 36px Kanit';const tw=Math.min(c.measureText(hook).width+50,560);c.fillStyle=Y;c.fillRect(0,-30,tw,62);c.restore();tx(c,hook,85,312,{size:36,fill:dark,max:510,rot:-5})}
+    pts.forEach((t,i)=>{const y=720+i*78;checkIcon(c,84,y,24,col,'#fff');tx(c,t,124,y,{size:32,weight:600,fill:dark,max:340})});
+    sticker(c,880,150,98,Y,price?[{t:'เพียง',s:28},{t:'฿'+Number(price).toLocaleString(),s:46}]:[{t:badge||'พร้อมส่ง',s:30}],dark,10);
+    [[360,90,22],[930,330,16],[420,640,14],[960,560,20]].forEach(([x,y,r])=>sparkle(c,x,y,r,'#fff'));
+  }else if(tpl==='soft'){
+    const g=c.createLinearGradient(0,0,0,W);g.addColorStop(0,tint(col,.93));g.addColorStop(1,tint(col,.72));c.fillStyle=g;c.fillRect(0,0,W,W);
+    blob(c,140,300,170,tint(col,.6),3);blob(c,900,700,210,tint(col,.65),5);blob(c,880,180,90,'rgba(255,255,255,.6)',9);
+    c.fillStyle=col;c.beginPath();c.moveTo(0,880);for(let x=0;x<=W;x+=8)c.lineTo(x,880+Math.sin(x/90)*14);c.lineTo(W,W);c.lineTo(0,W);c.fill();
+    c.save();c.shadowColor='rgba(0,0,0,.18)';c.shadowBlur=24;c.shadowOffsetY=10;c.fillStyle='#fff';c.beginPath();c.ellipse(512,790,250,46,0,0,7);c.fill();c.restore();
+    const e=elong(cut),s2=Math.min(460/cut.width,450/cut.height);if(e>=4)prod(512,600,520,460);else{c.save();c.shadowColor='rgba(0,0,0,.22)';c.shadowBlur=20;c.shadowOffsetY=8;c.drawImage(cut,512-cut.width*s2/2,790-cut.height*s2,cut.width*s2,cut.height*s2);c.restore()}
+    if(hd.small)tx(c,hd.small,512,80,{size:36,weight:600,fill:dark,align:'center',font:'Mitr',max:860});
+    tx(c,hd.big,512,hd.small?170:140,{size:104,font:'Sriracha',weight:400,fill:col,stroke:'#fff',sw:14,align:'center',max:900,shadow:'rgba(0,0,0,.12)'});
+    pts.forEach((t,i)=>{const left=i!==1,x=left?40:W-40-250,y=330+i*120;c.save();c.fillStyle='rgba(255,255,255,.92)';c.shadowColor='rgba(0,0,0,.08)';c.shadowBlur=10;rr(c,x,y,250,86,22);c.fill();c.restore();
+      checkIcon(c,x+34,y+43,17,col,'#fff');const ls=wrapTH(c,t,180,'600 24px Kanit').slice(0,2);ls.forEach((l,k)=>tx(c,l,x+62,y+43+(k-(ls.length-1)/2)*30,{size:24,weight:600,fill:dark,max:180}))});
+    if(hook)tx(c,'♡ '+hook+' ♡',512,948,{size:38,fill:'#fff',align:'center',max:900});
+    if(badge||price)sticker(c,890,150,84,'#fff',price?[{t:'฿'+Number(price).toLocaleString(),s:40}]:[{t:badge,s:26}],col,-8);
+    [[200,120,16],[830,420,14],[120,640,12]].forEach(([x,y,r])=>sparkle(c,x,y,r,'#fff'));
+  }else if(tpl==='benefit'){
+    c.fillStyle='#fff';c.fillRect(0,0,W,W);c.fillStyle=tint(col,.92);c.fillRect(0,0,W,W);
+    c.fillStyle=tint(col,.62);rr(c,560,60,430,760,60);c.fill();c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.arc(775,440,190,0,7);c.fill();
+    prod(775,450,400,620,.25);
+    const big=hd.small?hd.small+' '+hd.big:hd.big,ls=wrapTH(c,big,500,'800 66px Kanit').slice(0,3);
+    ls.forEach((l,i)=>tx(c,l,56,110+i*76,{size:66,weight:800,fill:i===ls.length-1?col:dark,max:500}));
+    const y0=110+ls.length*76+40;c.fillStyle=col;c.fillRect(56,y0-20,80,7);
+    pts.forEach((t,i)=>{const y=y0+40+i*120;checkIcon(c,90,y,32,col,'#fff');const l2=wrapTH(c,t,380,'600 30px Kanit').slice(0,2);l2.forEach((l,k)=>tx(c,l,140,y+(k-(l2.length-1)/2)*36,{size:30,weight:600,fill:'#333',max:390}))});
+    c.fillStyle=col;c.fillRect(0,880,W,W-880);
+    if(hook)tx(c,'★ '+hook+' ★',512,952,{size:40,fill:'#fff',align:'center',max:940});
+    if(badge||price)sticker(c,940,110,72,Y,price?[{t:'฿'+Number(price).toLocaleString(),s:34}]:[{t:badge,s:22}],dark,12);
+    [[600,120,14],[960,560,18],[600,760,12]].forEach(([x,y,r])=>sparkle(c,x,y,r,'#fff'));
+  }else{ // burst
+    const g=c.createRadialGradient(512,560,40,512,560,720);g.addColorStop(0,tint(col,.25));g.addColorStop(1,shade(col,.35));c.fillStyle=g;c.fillRect(0,0,W,W);
+    c.save();c.translate(512,580);c.fillStyle='rgba(255,255,255,.10)';for(let i=0;i<36;i+=2){c.beginPath();c.moveTo(0,0);c.arc(0,0,900,i*Math.PI/18,(i+1)*Math.PI/18);c.fill()}c.restore();
+    const gl=c.createRadialGradient(512,580,40,512,580,330);gl.addColorStop(0,'rgba(255,255,255,.9)');gl.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=gl;c.beginPath();c.arc(512,580,330,0,7);c.fill();
+    prod(512,575,600,470,.3);
+    if(hd.small)tx(c,hd.small,512,70,{size:42,weight:700,fill:'#fff',align:'center',max:900,stroke:shade(col,.5),sw:8});
+    tx(c,hd.big,512,hd.small?175:150,{size:130,weight:800,fill:Y,stroke:shade(col,.6),sw:18,align:'center',max:940,shadow:'rgba(0,0,0,.35)',sy:10});
+    if(hook){c.save();c.translate(512,862);c.rotate(-3*Math.PI/180);c.font='800 44px Kanit';const tw=Math.min(c.measureText(hook).width+80,940);c.fillStyle='#fff';c.shadowColor='rgba(0,0,0,.25)';c.shadowBlur=12;c.fillRect(-tw/2,-38,tw,76);c.restore();tx(c,hook,512,862,{size:44,weight:800,fill:col,align:'center',max:880,rot:-3})}
+    if(pts.length)tx(c,pts.map(t=>'✓ '+t).join('   '),512,950,{size:30,weight:600,fill:'#fff',align:'center',max:960});
+    if(price||badge)sticker(c,870,690,100,Y,price?[{t:'เพียง',s:28},{t:'฿'+Number(price).toLocaleString(),s:48}]:[{t:badge,s:28}],'#b91c1c',12);
+    [[120,330,20],[910,320,16],[150,760,14]].forEach(([x,y,r])=>sparkle(c,x,y,r,Y));
   }
-  if(b.badge){c.font='700 38px Kanit, sans-serif';const tw=Math.min(c.measureText(b.badge).width,W-420);c.fillStyle=col;rr(c,32,30,tw+60,68,34);c.fill();c.fillStyle=fg;fit(c,b.badge,'700',62,65,W-420,38,'left',22)}
-  if(price){c.fillStyle='#dc2626';c.beginPath();c.arc(W-118,118,88,0,Math.PI*2);c.fill();c.fillStyle='#fff';fit(c,'฿'+Number(price).toLocaleString(),'700',W-118,118,150,50,'center',24)}
-  if(shop){c.fillStyle='#9ca3af';fit(c,shop,'400',W/2,1010,W-100,20,'center',14)}
+  if(shop)tx(c,shop,W-24,W-18,{size:18,weight:500,fill:tpl==='pop'?'#fff':'rgba(0,0,0,.45)',align:'right',max:400});
 }
 
 
@@ -1107,7 +1175,7 @@ async function nightImages(id){
     nlog(id+': 🖼️ กรอบเพจ');
   }
   if(BOOT.makeBanner&&p.img_white&&!p.img_banner&&p.bannerObj&&p.bannerObj.headline){
-    const cv=document.createElement('canvas');await drawBanner(cv,await dataUrl(p.img_white),p.bannerObj,p.shop,'');
+    const cv=document.createElement('canvas');await drawBanner(cv,await dataUrl(p.img_white),p.bannerObj,p.shop,'',null,id);
     p=await run('saveImage',id,'banner',cv.toDataURL('image/jpeg',.9),JSON.stringify(p.bannerObj));
   }
   if(needStyle(p)){
