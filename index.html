@@ -817,7 +817,7 @@ function placeCut(c,cut,cx,cy,maxW,maxH,ang,shadowA){
   const bw=cut.width*co+cut.height*si,bh=cut.width*si+cut.height*co;
   const s=Math.min(maxW/bw,maxH/bh),w=cut.width*s,h=cut.height*s;
   c.save();c.translate(cx,cy);c.rotate(r);
-  if(shadowA){c.shadowColor=`rgba(0,0,0,${shadowA})`;c.shadowBlur=36;c.shadowOffsetY=20*Math.cos(r);c.shadowOffsetX=-20*Math.sin(r)}
+  if(shadowA){c.shadowColor=`rgba(0,0,0,${shadowA})`;c.shadowBlur=34;c.shadowOffsetX=14;c.shadowOffsetY=20}   // แสงจากซ้ายบน → เงาไปขวาล่าง
   try{c.filter='brightness(1.04) contrast(1.06) saturate(1.08)'}catch(e){}
   c.drawImage(cut,-w/2,-h/2,w,h);c.restore();
   return {w:bw*s,h:bh*s};
