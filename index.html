@@ -586,11 +586,20 @@ function renderDetail(){
     ${priceRefHtml(c.priceRef)}
     <div class="row"><div><div class="lbl">SKU</div><input type="text" data-k="sku" value="${esc(c.sku)}"></div>
       <div><div class="lbl">สภาพ</div><select data-k="condition">${CONDS.map(x=>`<option ${x.v===c.condition?'selected':''}>${esc(x.v)}</option>`).join('')}</select></div></div>
-    <div class="row"><div><div class="lbl">น้ำหนัก (g)</div><input type="number" data-k="weight" value="${esc(c.weight)}"></div>
-      <div><div class="lbl">ขนาด ยxกxส (cm)</div><input type="text" data-k="size" value="${esc(c.size)}"></div></div>
+    <div class="row"><div><div class="lbl">น้ำหนักพัสดุ (g)</div><input type="number" data-k="weight" value="${esc(c.weight)}"></div>
+      <div><div class="lbl">ขนาดพัสดุ ยxกxส (cm)</div><input type="text" data-k="size" value="${esc(c.size)}"></div></div>
+    <div class="row"><div><div class="lbl">น้ำหนักสินค้า (g)</div><input type="number" data-k="item_weight" value="${esc(c.item_weight)}"></div>
+      <div><div class="lbl">ขนาดสินค้า (cm)</div><input type="text" data-k="item_size" value="${esc(c.item_size)}"></div></div>
     ${c.est_flag?`<div class="note">📏 ${esc(c.est_flag)} — ควรชั่ง/วัดจริงเพื่อค่าส่งที่ถูกต้อง</div>`:''}
     <div class="row"><div><div class="lbl">ยี่ห้อ</div><input type="text" data-k="brand" value="${esc(c.brand)}"></div>
-      <div><div class="lbl">หมวดหมู่</div><input type="text" data-k="category" value="${esc(c.category)}"></div></div>
+      <div><div class="lbl">ประเทศที่ผลิต</div><input type="text" data-k="origin" value="${esc(c.origin)}"></div></div>
+    <div class="row"><div><div class="lbl">วัสดุ</div><input type="text" data-k="material" value="${esc(c.material)}"></div>
+      <div><div class="lbl">สี</div><input type="text" data-k="color" value="${esc(c.color)}"></div></div>
+    <div class="lbl">การรับประกัน</div><input type="text" data-k="warranty" value="${esc(c.warranty)}">
+    <div class="lbl">หมวด Shopee</div><input type="text" data-k="cat_shopee" value="${esc(c.cat_shopee||c.category)}">
+    <div class="lbl">หมวด TikTok Shop</div><input type="text" data-k="cat_tiktok" value="${esc(c.cat_tiktok||c.category)}">
+    <div class="lbl">หมวด Lazada</div><input type="text" data-k="cat_lazada" value="${esc(c.cat_lazada||c.category)}">
+    <div class="lbl">คุณสมบัติอื่น <small>บรรทัดละ 1 ข้อ เช่น ความจุ: 500 ml</small></div><textarea data-k="attrs" style="min-height:70px">${esc(c.attrs)}</textarea>
   </div>`;
 
   h+=`<div class="card"><div class="tabs">${['shopee','tiktok','lazada'].map(p=>`<button class="btn sm ${p===PTAB?'primary':''}" data-tab="${p}">${{shopee:'🟠 Shopee',tiktok:'⚫ TikTok',lazada:'🔵 Lazada'}[p]}</button>`).join('')}</div>
