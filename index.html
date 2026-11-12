@@ -115,7 +115,7 @@ a{color:var(--brand)}
     <div class="lbl" data-t="photos">รูปสินค้า</div>
     <div class="thumbs" id="thumbs"></div>
     <div class="row">
-      <label class="btn big primary"><input type="file" id="inCam" accept="image/*" capture="environment" hidden>📷 <span data-t="shoot">ถ่ายรูป</span></label>
+      <button class="btn big primary" id="btnCam">📷 <span data-t="shoot">ถ่ายรูป</span></button><input type="file" id="inCam" accept="image/*" capture="environment" hidden>
       <label class="btn big ghost"><input type="file" id="inLib" accept="image/*" multiple hidden>🖼️ <span data-t="pick">เลือกหลายรูป</span></label>
     </div>
     <div class="hint" data-t="hint1">ถ่ายได้หลายมุม (สูงสุด 8 รูป) รูปแรก = รูปหลักที่ AI ใช้แต่งรูป กด ⭐ เพื่อเปลี่ยน</div>
@@ -211,6 +211,31 @@ a{color:var(--brand)}
   </div>
 </div>
 
+<!-- กล้องในแอป: ถ่ายรัวหลายรูป แล้วกดยืนยันทีเดียว -->
+<div id="cam" class="hidden" style="position:fixed;inset:0;background:#000;z-index:40;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));color:#fff">
+    <button class="pill" id="camClose" style="font-size:18px">✕</button>
+    <b id="camCount" style="flex:1;text-align:center;font-size:18px">0/8</b>
+    <button class="pill" id="camTorch" style="display:none">🔦</button>
+    <button class="pill" id="camFlip">🔄</button>
+  </div>
+  <div style="position:relative;flex:1;overflow:hidden">
+    <video id="camV" playsinline muted autoplay style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video>
+    <div id="camFlash" style="position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .15s"></div>
+    <div id="camHint" style="position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 3px #000"></div>
+  </div>
+  <div id="camStrip" style="display:flex;gap:6px;padding:8px 12px;overflow-x:auto;min-height:72px;background:#111"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:#111">
+    <div style="display:flex;align-items:center;gap:4px;color:#fff;flex:1">
+      <button class="pill" id="camQm" style="width:38px;height:38px">−</button><b id="camQty" style="min-width:26px;text-align:center">1</b><button class="pill" id="camQp" style="width:38px;height:38px">+</button>
+    </div>
+    <button id="camShot" aria-label="ถ่าย" style="width:78px;height:78px;border-radius:50%;border:6px solid #fff;background:#fb923c;flex:none"></button>
+    <div style="display:flex;flex-direction:column;gap:6px;flex:1;align-items:flex-end">
+      <button class="btn sm ok" id="camSave" style="white-space:nowrap">💾 <span data-t="camSave">บันทึก+ชิ้นต่อไป</span></button>
+      <button class="btn sm" id="camDone" style="white-space:nowrap">✓ <span data-t="camDone">ยืนยันรูป</span></button>
+    </div>
+  </div>
+</div>
 <div id="qrtmp" style="display:none"></div>
 <div id="toast"></div>
 
@@ -276,8 +301,8 @@ const errMsg=e=>(e&&e.message)||String(e);
 
 /* ---------- ภาษา ไทย / พม่า ---------- */
 const T={
- th:{staff:'ชื่อพนักงาน',photos:'รูปสินค้า',shoot:'ถ่ายรูป',pick:'เลือกหลายรูป',hint1:'ถ่ายได้หลายมุม (สูงสุด 8 รูป) รูปแรก = รูปหลักที่ AI ใช้แต่งรูป กด ⭐ เพื่อเปลี่ยน',qty:'จำนวน',price:'ราคาขาย (ไม่ใส่ก็ได้)',cond:'สภาพสินค้า',sku:'รหัสสินค้า / QR (ไม่ใส่ก็ได้)',scan:'สแกน',more:'น้ำหนัก / ขนาด (ไม่ใส่ก็ได้ AI จะประมาณให้)',weight:'น้ำหนัก (กรัม)',size:'ขนาด ยาว × กว้าง × สูง (ซม.)',extra:'ข้อมูลเพิ่มเติม (ไม่ใส่ก็ได้)',extraPh:'เช่น ยี่ห้อ รุ่น ขนาด ใช้งานได้ปกติ มีรอยตรงไหน ของในกล่องมีอะไรบ้าง — ยิ่งใส่ AI ยิ่งหาข้อมูลแม่น',aiNow:'ให้ AI ทำทันทีหลังบันทึก',save:'💾 บันทึก แล้วถ่ายชิ้นต่อไป',needPhoto:'ใส่รูปอย่างน้อย 1 รูป',needStaff:'ใส่ชื่อพนักงานก่อน',saved:'บันทึกแล้ว',uploading:'กำลังอัปโหลด',failed:'อัปโหลดไม่สำเร็จ',retry:'ลองใหม่',max8:'ใส่ได้สูงสุด 8 รูป',qrFail:'อ่าน QR ไม่ได้ ลองถ่ายใหม่ให้ชัดขึ้น',nav_cap:'ถ่ายรูป',nav_list:'รายการ',nav_exp:'ส่งออก',lang:'🇲🇲 မြန်မာ'},
- my:{staff:'ဝန်ထမ်းအမည်',photos:'ပစ္စည်းဓာတ်ပုံ',shoot:'ဓာတ်ပုံရိုက်ရန်',pick:'ဓာတ်ပုံများ ရွေးရန်',hint1:'ထောင့်စုံမှ ရိုက်ပါ (အများဆုံး ၈ ပုံ)။ ပထမပုံ = ပင်မပုံ။ ⭐ နှိပ်၍ ပြောင်းနိုင်သည်',qty:'အရေအတွက်',price:'ရောင်းဈေး (မထည့်လည်းရ)',cond:'ပစ္စည်းအခြေအနေ',sku:'ပစ္စည်းကုဒ် / QR (မထည့်လည်းရ)',scan:'စကန်',more:'အလေးချိန် / အရွယ်အစား (မထည့်လည်းရ)',weight:'အလေးချိန် (ဂရမ်)',size:'အရွယ်အစား အလျား × အနံ × အမြင့် (စင်တီမီတာ)',extra:'အချက်အလက် ထပ်ဆောင်း (မထည့်လည်းရ)',extraPh:'ဥပမာ - တံဆိပ်၊ မော်ဒယ်၊ အရွယ်အစား၊ ကောင်းကောင်းအလုပ်လုပ်သည်၊ အစင်းရာ ရှိသည့်နေရာ',aiNow:'သိမ်းပြီးတာနဲ့ AI ကို ချက်ချင်း လုပ်ခိုင်းမည်',save:'💾 သိမ်းပြီး နောက်တစ်ခု ရိုက်ရန်',needPhoto:'ဓာတ်ပုံ အနည်းဆုံး ၁ ပုံ ထည့်ပါ',needStaff:'ဝန်ထမ်းအမည် အရင်ထည့်ပါ',saved:'သိမ်းပြီးပါပြီ',uploading:'တင်နေသည်',failed:'တင်မရပါ',retry:'ပြန်ကြိုးစားရန်',max8:'အများဆုံး ၈ ပုံသာ ထည့်နိုင်သည်',qrFail:'QR ဖတ်မရပါ။ ပြန်ရိုက်ပါ',nav_cap:'ဓာတ်ပုံ',nav_list:'စာရင်း',nav_exp:'ထုတ်ယူ',lang:'🇹🇭 ไทย'}
+ th:{staff:'ชื่อพนักงาน',photos:'รูปสินค้า',shoot:'ถ่ายรูป',pick:'เลือกหลายรูป',hint1:'ถ่ายได้หลายมุม (สูงสุด 8 รูป) รูปแรก = รูปหลักที่ AI ใช้แต่งรูป กด ⭐ เพื่อเปลี่ยน',qty:'จำนวน',price:'ราคาขาย (ไม่ใส่ก็ได้)',cond:'สภาพสินค้า',sku:'รหัสสินค้า / QR (ไม่ใส่ก็ได้)',scan:'สแกน',more:'น้ำหนัก / ขนาด (ไม่ใส่ก็ได้ AI จะประมาณให้)',weight:'น้ำหนัก (กรัม)',size:'ขนาด ยาว × กว้าง × สูง (ซม.)',extra:'ข้อมูลเพิ่มเติม (ไม่ใส่ก็ได้)',extraPh:'เช่น ยี่ห้อ รุ่น ขนาด ใช้งานได้ปกติ มีรอยตรงไหน ของในกล่องมีอะไรบ้าง — ยิ่งใส่ AI ยิ่งหาข้อมูลแม่น',aiNow:'ให้ AI ทำทันทีหลังบันทึก',save:'💾 บันทึก แล้วถ่ายชิ้นต่อไป',needPhoto:'ใส่รูปอย่างน้อย 1 รูป',needStaff:'ใส่ชื่อพนักงานก่อน',saved:'บันทึกแล้ว',uploading:'กำลังอัปโหลด',failed:'อัปโหลดไม่สำเร็จ',retry:'ลองใหม่',max8:'ใส่ได้สูงสุด 8 รูป',qrFail:'อ่าน QR ไม่ได้ ลองถ่ายใหม่ให้ชัดขึ้น',nav_cap:'ถ่ายรูป',nav_list:'รายการ',nav_exp:'ส่งออก',lang:'🇲🇲 မြန်မာ',camSave:'บันทึก+ชิ้นต่อไป',camDone:'ยืนยันรูป',camHint:'กดปุ่มส้มถ่ายรัวได้เลย • แตะรูปเล็กเพื่อลบ',camNo:'เปิดกล้องในแอปไม่ได้ ใช้กล้องปกติแทน'},
+ my:{staff:'ဝန်ထမ်းအမည်',photos:'ပစ္စည်းဓာတ်ပုံ',shoot:'ဓာတ်ပုံရိုက်ရန်',pick:'ဓာတ်ပုံများ ရွေးရန်',hint1:'ထောင့်စုံမှ ရိုက်ပါ (အများဆုံး ၈ ပုံ)။ ပထမပုံ = ပင်မပုံ။ ⭐ နှိပ်၍ ပြောင်းနိုင်သည်',qty:'အရေအတွက်',price:'ရောင်းဈေး (မထည့်လည်းရ)',cond:'ပစ္စည်းအခြေအနေ',sku:'ပစ္စည်းကုဒ် / QR (မထည့်လည်းရ)',scan:'စကန်',more:'အလေးချိန် / အရွယ်အစား (မထည့်လည်းရ)',weight:'အလေးချိန် (ဂရမ်)',size:'အရွယ်အစား အလျား × အနံ × အမြင့် (စင်တီမီတာ)',extra:'အချက်အလက် ထပ်ဆောင်း (မထည့်လည်းရ)',extraPh:'ဥပမာ - တံဆိပ်၊ မော်ဒယ်၊ အရွယ်အစား၊ ကောင်းကောင်းအလုပ်လုပ်သည်၊ အစင်းရာ ရှိသည့်နေရာ',aiNow:'သိမ်းပြီးတာနဲ့ AI ကို ချက်ချင်း လုပ်ခိုင်းမည်',save:'💾 သိမ်းပြီး နောက်တစ်ခု ရိုက်ရန်',needPhoto:'ဓာတ်ပုံ အနည်းဆုံး ၁ ပုံ ထည့်ပါ',needStaff:'ဝန်ထမ်းအမည် အရင်ထည့်ပါ',saved:'သိမ်းပြီးပါပြီ',uploading:'တင်နေသည်',failed:'တင်မရပါ',retry:'ပြန်ကြိုးစားရန်',max8:'အများဆုံး ၈ ပုံသာ ထည့်နိုင်သည်',qrFail:'QR ဖတ်မရပါ။ ပြန်ရိုက်ပါ',nav_cap:'ဓာတ်ပုံ',nav_list:'စာရင်း',nav_exp:'ထုတ်ယူ',lang:'🇹🇭 ไทย',camSave:'သိမ်း+နောက်တစ်ခု',camDone:'ဓာတ်ပုံ အတည်ပြု',camHint:'လိမ္မော်ခလုတ်ကို ဆက်တိုက်နှိပ်ပါ • ပုံငယ်ကိုနှိပ်၍ ဖျက်ပါ',camNo:'ကင်မရာ မဖွင့်နိုင်ပါ'}
 };
 const CONDS=[{v:'มือ 1 (ใหม่)',my:'ပစ္စည်းအသစ်'},{v:'มือ 2 สภาพดีมาก',my:'တစ်ပတ်ရစ် - အလွန်ကောင်း'},{v:'มือ 2 สภาพดี',my:'တစ်ပတ်ရစ် - ကောင်း'},{v:'มือ 2 มีตำหนิ',my:'တစ်ပတ်ရစ် - အပြစ်အနာအဆာရှိ'}];
 let LANG=ls('lang')==='my'?'my':'th';
@@ -292,7 +317,7 @@ function applyLang(){
 $('#langBtn').onclick=()=>{LANG=LANG==='th'?'my':'th';ls('lang',LANG);applyLang()};
 
 /* ---------- เริ่มต้น ---------- */
-let BOOT={shop:'',max:{shopee:120,tiktok:255,lazada:255},makeBanner:true,whiteMode:'BROWSER',sceneMode:'TEMPLATE',scenes:{},cutModel:'isnet_fp16',bgCount:0,hasCF:false};
+let BOOT={shop:'',max:{shopee:120,tiktok:255,lazada:255},makeBanner:true,whiteMode:'BROWSER',sceneMode:'TEMPLATE',scenes:{},cutModel:'isnet_fp16',bgCount:0,hasCF:false,makeFrame:true,framePrice:false,frameUrl:''};
 $('#staff').value=ls('staff')||'';
 $('#staff').onchange=()=>ls('staff',$('#staff').value.trim());
 /* เปิดจาก LINE → เด้งไปเบราว์เซอร์จริง (กล้องในแอป LINE มักใช้ไม่ได้) */
@@ -351,6 +376,52 @@ async function addFiles(files){
   renderThumbs();
 }
 $('#inCam').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+
+/* ---------- กล้องในแอป (แบบสแกนแพ็ค) ---------- */
+let CAM={stream:null,facing:'environment',torch:false};
+async function camStart(){
+  camStop();
+  CAM.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:CAM.facing},width:{ideal:1920},height:{ideal:1440}}});
+  const v=$('#camV');v.srcObject=CAM.stream;await v.play().catch(()=>{});
+  const tr=CAM.stream.getVideoTracks()[0];let caps={};try{caps=tr.getCapabilities?tr.getCapabilities():{}}catch(e){}
+  $('#camTorch').style.display=caps.torch?'':'none';CAM.torch=false;
+  try{if(caps.focusMode&&caps.focusMode.includes('continuous'))await tr.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
+}
+function camStop(){if(CAM.stream){CAM.stream.getTracks().forEach(t=>t.stop());CAM.stream=null}}
+function camRender(){
+  $('#camCount').textContent=PH.length+'/8';$('#camQty').textContent=$('#qty').value||1;
+  $('#camStrip').innerHTML=PH.map((d,i)=>`<img src="${d}" data-i="${i}" style="height:56px;width:56px;object-fit:cover;border-radius:8px;border:2px solid ${i?'#555':'#fb923c'};flex:none">`).join('');
+  $$('#camStrip img').forEach(im=>im.onclick=()=>{PH.splice(+im.dataset.i,1);camRender();renderThumbs()});
+  $('#camHint').textContent=t('camHint');
+}
+async function camOpen(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('#inCam').click();return}
+  $('#cam').classList.remove('hidden');camRender();
+  try{await camStart()}catch(e){$('#cam').classList.add('hidden');toast(t('camNo'));$('#inCam').click()}
+}
+function camClose(){camStop();$('#cam').classList.add('hidden');renderThumbs()}
+$('#btnCam').onclick=camOpen;
+$('#camClose').onclick=camClose;
+$('#camDone').onclick=camClose;
+$('#camFlip').onclick=async()=>{CAM.facing=CAM.facing==='environment'?'user':'environment';try{await camStart()}catch(e){toast(errMsg(e))}};
+$('#camTorch').onclick=async()=>{const tr=CAM.stream&&CAM.stream.getVideoTracks()[0];if(!tr)return;CAM.torch=!CAM.torch;try{await tr.applyConstraints({advanced:[{torch:CAM.torch}]})}catch(e){}};
+$('#camQm').onclick=()=>{$('#qty').value=Math.max(1,(+$('#qty').value||1)-1);camRender()};
+$('#camQp').onclick=()=>{$('#qty').value=(+$('#qty').value||0)+1;camRender()};
+$('#camShot').onclick=()=>{
+  if(PH.length>=8)return toast(t('max8'));
+  const v=$('#camV');if(!v.videoWidth)return;
+  const s=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight)),w=Math.round(v.videoWidth*s),h=Math.round(v.videoHeight*s);
+  const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(v,0,0,w,h);
+  PH.push(c.toDataURL('image/jpeg',.85));
+  const f=$('#camFlash');f.style.opacity=.7;setTimeout(()=>f.style.opacity=0,120);try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}
+  camRender();
+};
+/* บันทึกชิ้นนี้แล้วถ่ายชิ้นต่อไปได้เลย โดยไม่ต้องปิดกล้อง */
+$('#camSave').onclick=()=>{
+  if(!PH.length)return toast(t('needPhoto'));
+  if(!$('#staff').value.trim()){camClose();$('#staff').focus();return toast(t('needStaff'))}
+  $('#btnSave').click();camRender();
+};
 $('#inLib').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
 function renderThumbs(){
   $('#thumbs').innerHTML=PH.map((d,i)=>`<div class="th"><img src="${d}"><button class="x" data-i="${i}">✕</button>${i?`<button class="star" data-i="${i}">⭐</button>`:'<div class="main">หลัก</div>'}</div>`).join('');
@@ -454,6 +525,7 @@ $('#dDel').onclick=async()=>{
 function allImages(){
   const a=[];
   if(CUR.img_white)a.push({id:CUR.img_white,tag:'AI พื้นขาว',kind:'white'});
+  if(CUR.img_frame)a.push({id:CUR.img_frame,tag:'กรอบเพจ',kind:'frame'});
   if(CUR.img_banner)a.push({id:CUR.img_banner,tag:'AI ป้ายขาย',kind:'banner'});
   if(CUR.img_scene)a.push({id:CUR.img_scene,tag:'AI จัดฉาก',kind:'scene'});
   (CUR.extraArr||[]).forEach((id,i)=>a.push({id,tag:'สไตล์ '+(i+1),kind:'extra'}));
@@ -564,12 +636,13 @@ function bannerForm(b){
   const p=b.points||[];
   return `<div class="lbl">ป้ายมุมบน</div><input type="text" id="bBadge" value="${esc(b.badge)}">
   <div class="lbl">หัวข้อใหญ่</div><input type="text" id="bHead" value="${esc(b.headline)}">
+  <div class="lbl">คำกระตุ้นซื้อ <small>(ใช้ในรูปกรอบเพจ)</small></div><input type="text" id="bHook" value="${esc(b.hook)}">
   <div class="lbl">จุดขาย 3 ข้อ</div>
   <input type="text" id="bP1" value="${esc(p[0])}" style="margin-bottom:6px"><input type="text" id="bP2" value="${esc(p[1])}" style="margin-bottom:6px"><input type="text" id="bP3" value="${esc(p[2])}">
   <div class="row" style="margin-top:8px"><label class="sw" style="margin:0">สี <input type="color" id="bColor" value="${/^#[0-9a-f]{6}$/i.test(b.color||'')?b.color:'#c2410c'}" style="width:50px;height:36px"></label>
   <label class="sw" style="margin:0"><input type="checkbox" id="bPrice" ${b.showPrice?'checked':''}> แสดงราคา</label></div>`;
 }
-function readBanner(){return{badge:$('#bBadge').value.trim(),headline:$('#bHead').value.trim(),points:[$('#bP1').value.trim(),$('#bP2').value.trim(),$('#bP3').value.trim()],color:$('#bColor').value,showPrice:$('#bPrice').checked}}
+function readBanner(){return{badge:$('#bBadge').value.trim(),hook:$('#bHook').value.trim(),headline:$('#bHead').value.trim(),points:[$('#bP1').value.trim(),$('#bP2').value.trim(),$('#bP3').value.trim()],color:$('#bColor').value,showPrice:$('#bPrice').checked}}
 function bindDetail(){
   $$('.gi[data-id]').forEach(e=>e.onclick=ev=>{
     if(ev.target.closest('.zoom'))return;
@@ -611,6 +684,8 @@ function restore(o){Object.keys(o).forEach(k=>{const e=$(`#dBody [data-k="${k}"]
 async function redo(kind,fid){
   if(kind==='extra'){if(!confirm('ลบรูปนี้?'))return;const keep=gather();CUR=await run('removeExtra',CUR.id,fid);ORDER=ORDER.filter(x=>x!==fid);renderDetail();restore(keep);return}
   if(kind==='banner'){await composeBanner(CUR.bannerObj||{},true);return}
+  if(kind==='frame'){const ph=CUR.photosArr||[];const b=await bestCut(CUR.id,ph,t=>setProg('🔁 '+esc(t)));
+    const bo=$('#bBadge')?readBanner():CUR.bannerObj;await saveKind('frame',await drawFrame(b.cut,bo,CUR.price));setProg('');toast('ทำกรอบใหม่แล้ว');return}
   const n=(CUR.photosArr||[]).length;
   if(kind==='white'&&n>1){const sel=$('#srcIdx');sel.value=String(((+sel.value||0)+1)%n);toast('ทำพื้นขาวใหม่จากรูปจริงใบที่ '+(+sel.value+1))}
   await regen(kind);
@@ -790,6 +865,64 @@ async function makeSceneCanvas(cut,type){
   return cv;
 }
 
+/* ---------- กรอบเพจของร้าน: สินค้าจริงตรงกลาง + คำขายกระตุ้นซื้อ ---------- */
+let FRAME=null;
+async function frameInfo(){
+  if(FRAME)return FRAME;
+  const im=await loadImg(BOOT.frameUrl||'frames/frame1.png');
+  const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.drawImage(im,0,0);
+  const d=x.getImageData(0,0,c.width,c.height).data;let l=c.width,t=c.height,r=0,b=0;
+  for(let y=0;y<c.height;y+=2)for(let i=0;i<c.width;i+=2)if(d[(y*c.width+i)*4+3]<100){if(i<l)l=i;if(i>r)r=i;if(y<t)t=y;if(y>b)b=y}
+  FRAME={im,W:c.width,H:c.height,win:{l,t,r,b}};return FRAME;
+}
+const needFrame=p=>BOOT.makeFrame&&!p.img_frame&&p.bannerObj&&p.bannerObj.headline;
+function strokeText(c,text,x,y,size,maxW,fill,stroke,sw,weight){
+  let s=size;do{c.font=`${weight||700} ${s}px Kanit, sans-serif`;if(c.measureText(text).width<=maxW)break;s-=2}while(s>18);
+  c.textAlign='center';c.textBaseline='middle';c.lineJoin='round';
+  if(stroke){c.lineWidth=sw||10;c.strokeStyle=stroke;c.strokeText(text,x,y)}c.fillStyle=fill;c.fillText(text,x,y);
+}
+async function drawFrame(cut,b,price){
+  try{await Promise.all([document.fonts.load('700 60px Kanit'),document.fonts.load('500 30px Kanit')])}catch(e){}
+  b=b||{};const F=await frameInfo(),W=F.W,H=F.H,w=F.win,k=1080/W;
+  const cv=document.createElement('canvas');cv.width=1080;cv.height=Math.round(H*k);const c=cv.getContext('2d');c.scale(k,k);
+  const cx=(w.l+w.r)/2,ww=w.r-w.l,wh=w.b-w.t;
+  // พื้นในกรอบ: ขาวสว่างตรงกลาง + แสงกระจายเป็นแฉก ดึงสายตาไปที่สินค้า
+  const g=c.createRadialGradient(cx,w.t+wh*.55,20,cx,w.t+wh*.55,ww*.75);g.addColorStop(0,'#ffffff');g.addColorStop(.6,'#f3f8ff');g.addColorStop(1,'#d9eaff');
+  c.fillStyle=g;c.fillRect(w.l,w.t,ww,wh);
+  c.save();c.translate(cx,w.t+wh*.55);c.fillStyle='rgba(255,255,255,.55)';
+  for(let i=0;i<24;i+=2){c.beginPath();c.moveTo(0,0);c.arc(0,0,ww,i*Math.PI/12,(i+1)*Math.PI/12);c.closePath();c.fill()}c.restore();
+  // หัวข้อขาย (ใต้โลโก้)
+  const top=w.t+wh*.17;
+  strokeText(c,b.headline||'',cx,top,58,ww*.86,'#c1121f','#fff',14);
+  // ข้อความกระตุ้น (ป้ายสีน้ำเงิน)
+  const hook=b.hook||b.badge||'';
+  if(hook){c.font='700 30px Kanit, sans-serif';const tw=Math.min(c.measureText(hook).width,ww*.7)+56;
+    c.fillStyle='#1d3c8f';rr(c,cx-tw/2,top+44,tw,50,25);c.fill();strokeText(c,'🔥 '+hook,cx,top+70,30,ww*.7,'#fff',null,0)}
+  // สินค้าจริง + เงา
+  const pcY=w.t+wh*.52,maxW=ww*.66,maxH=wh*.40;
+  const e=elong(cut),tall=cut.height>cut.width,ang=e>=4?(tall?38:-38):0;
+  const r0=ang*Math.PI/180,bh=Math.abs(cut.width*Math.sin(r0))+Math.abs(cut.height*Math.cos(r0)),bw=Math.abs(cut.width*Math.cos(r0))+Math.abs(cut.height*Math.sin(r0));
+  const sc=Math.min(maxW/bw,maxH/bh);
+  shadow(c,cx,pcY+bh*sc/2+4,bw*sc*.42,18,.30);
+  placeCut(c,cut,cx,pcY,maxW,maxH,ang,.18);
+  // จุดขาย: 2 แถว (2 + 1) ระหว่างตัวการ์ตูน
+  const pts=(b.points||[]).filter(Boolean).slice(0,3);
+  const pill=(text,x,y,maxw)=>{let fs=25;c.font=`600 ${fs}px Kanit, sans-serif`;while(c.measureText(text).width>maxw-40&&fs>16){fs--;c.font=`600 ${fs}px Kanit, sans-serif`}
+    const tw=c.measureText(text).width+40;c.fillStyle='rgba(255,255,255,.96)';c.strokeStyle='#1d3c8f';c.lineWidth=3;rr(c,x-tw/2,y-24,tw,48,24);c.fill();c.stroke();
+    c.fillStyle='#1d3c8f';c.textAlign='center';c.textBaseline='middle';c.fillText(text,x,y+1)};
+  const rowW=ww*.52;
+  if(pts.length>=2){const y=w.t+wh*.785;pill('✓ '+pts[0],cx-rowW/4-6,y,rowW/2-6);pill('✓ '+pts[1],cx+rowW/4+6,y,rowW/2-6)}
+  else if(pts.length===1)pill('✓ '+pts[0],cx,w.t+wh*.785,rowW);
+  if(pts.length===3)pill('✓ '+pts[2],cx,w.t+wh*.85,rowW);
+  // ราคา (เปิดได้ในตั้งค่า)
+  if(price&&(BOOT.framePrice||b.showPrice)){const px=w.r-95,py=w.t+wh*.30;c.save();c.translate(px,py);c.fillStyle='#e11d48';c.beginPath();
+    for(let i=0;i<32;i++){const rr2=i%2?62:78,a=i*Math.PI/16;c.lineTo(Math.cos(a)*rr2,Math.sin(a)*rr2)}c.closePath();c.fill();c.restore();
+    strokeText(c,'฿'+Number(price).toLocaleString(),px,py+4,40,110,'#fff',null,0)}
+  // กรอบร้านทับด้านบนสุด (ตัวการ์ตูนบังขอบสินค้าได้อย่างเป็นธรรมชาติ)
+  c.drawImage(F.im,0,0);
+  return cv;
+}
+
 /* วางสินค้าจริง (ที่ตัดพื้นหลังแล้ว) ลงบนฉากที่ AI สร้าง — สินค้าเป็นของจริง 100% */
 async function composeOnBg(cut,bgSrc){
   const W=1024,cv=document.createElement('canvas');cv.width=cv.height=W;const c=cv.getContext('2d');
@@ -822,6 +955,11 @@ async function ensureImages(){
         await run('flagImage',CUR.id,msg);const keep=gather();CUR.error=msg;renderDetail();restore(keep)}
     }
     if(BOOT.makeBanner&&CUR.img_white&&!CUR.img_banner&&CUR.bannerObj&&CUR.bannerObj.headline)await composeBanner(CUR.bannerObj,true,true);
+    if(needFrame(CUR)&&photos.length){
+      const b=await bestCut(CUR.id,photos,t=>setProg('🔁 '+esc(t)));
+      setProg('<span class="spin"></span> ทำรูปกรอบเพจ...');
+      await saveKind('frame',await drawFrame(b.cut,CUR.bannerObj,CUR.price));
+    }
     if(needStyle(CUR)&&photos.length){
       const b=await bestCut(CUR.id,photos,t=>setProg('🔁 '+esc(t)));const keep=gather();
       CUR=await makeStyleImages(CUR,b.cut,t=>setProg('<span class="spin"></span> '+esc(t)));
@@ -944,7 +1082,7 @@ function nstat(now){$('#nText').textContent=NC.t;$('#nImg').textContent=NC.i;$('
 async function wake(){try{if('wakeLock' in navigator&&NIGHT)WAKE=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(NIGHT&&document.visibilityState==='visible')wake()});
 async function nwait(ms,msg){const end=Date.now()+ms;while(NIGHT&&Date.now()<end){nstat(`${msg} (อีก ${Math.ceil((end-Date.now())/60000)} นาที)`);await sleep(5000)}}
-function needImgs(p){return (BOOT.whiteMode==='BROWSER'&&!p.imgs.w)||(BOOT.sceneMode==='TEMPLATE'&&!p.imgs.s)||(BOOT.makeBanner&&!p.imgs.b)||(BOOT.hasCF&&BOOT.bgCount>0&&!p.imgs.x)}
+function needImgs(p){return (BOOT.makeFrame&&!p.imgs.f)||(BOOT.whiteMode==='BROWSER'&&!p.imgs.w)||(BOOT.sceneMode==='TEMPLATE'&&!p.imgs.s)||(BOOT.makeBanner&&!p.imgs.b)||(BOOT.hasCF&&BOOT.bgCount>0&&!p.imgs.x)}
 async function nightImages(id){
   let p=await run('getProduct',id);const photos=p.photosArr||[];if(!photos.length)return false;
   const needW=BOOT.whiteMode==='BROWSER'&&!p.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!p.img_scene;
@@ -953,7 +1091,11 @@ async function nightImages(id){
     if(needW)p=await run('saveImage',id,'white',(b.white||makeWhiteCanvas(b.cut)).toDataURL('image/jpeg',.9),null);
     if(needS)p=await run('saveImage',id,'scene',(await makeSceneCanvas(b.cut,p.scene_type)).toDataURL('image/jpeg',.9),null);
     if(b.failed){await run('flagImage',id,'⚠️ รูปตัดพื้นหลังไม่ผ่านเกณฑ์อัตโนมัติ ('+b.why+') — ควรตรวจ');nlog(id+': ⚠️ ลองครบแล้วยังไม่ผ่าน ใช้รูปที่ดีที่สุด + ติดธงให้ตรวจ')}
-    Object.keys(CUT).forEach(k=>{if(photos.some(f=>k.startsWith(f)))delete CUT[k]});
+  }
+  if(needFrame(p)){
+    const b=await bestCut(id,photos,t=>nlog(id+': 🔁 '+t));
+    p=await run('saveImage',id,'frame',(await drawFrame(b.cut,p.bannerObj,p.price)).toDataURL('image/jpeg',.9),null);
+    nlog(id+': 🖼️ กรอบเพจ');
   }
   if(BOOT.makeBanner&&p.img_white&&!p.img_banner&&p.bannerObj&&p.bannerObj.headline){
     const cv=document.createElement('canvas');await drawBanner(cv,await dataUrl(p.img_white),p.bannerObj,p.shop,'');
@@ -962,8 +1104,8 @@ async function nightImages(id){
   if(needStyle(p)){
     const b=await bestCut(id,photos,t=>nlog(id+': 🔁 '+t));
     p=await makeStyleImages(p,b.cut,t=>nlog(id+': ✨ '+t));
-    Object.keys(CUT).forEach(k=>{if(photos.some(f=>k.startsWith(f)))delete CUT[k]});
   }
+  Object.keys(CUT).forEach(k=>{if(photos.some(f=>k.startsWith(f)))delete CUT[k]});
   // คืนหน่วยความจำ (เก็บไว้เฉพาะรูปฉาก)
   const keep=new Set([].concat(...Object.values(BOOT.scenes||{})));
   Object.keys(IMGCACHE).forEach(k=>{if(!keep.has(k))delete IMGCACHE[k]});
@@ -991,7 +1133,7 @@ async function nightLoop(){
           NC.e++;nlog(`${p.id}: ${String(r.error||'').slice(0,120)}`);continue;
         }
         NC.t++;nlog(`${p.id}: ✍️ ${String(r.title_shopee||r.name||'').slice(0,60)}`);
-        if(needImgs({imgs:{w:!!r.img_white,s:!!r.img_scene,b:!!r.img_banner,x:!!(r.extraArr||[]).length}})){
+        if(needImgs({imgs:{w:!!r.img_white,s:!!r.img_scene,b:!!r.img_banner,f:!!r.img_frame,x:!!(r.extraArr||[]).length}})){
           nstat(`<span class="spin"></span> ทำรูป ${p.id}`);
           await nightImages(p.id);NTRY['img'+p.id]=9;NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`);
         }
