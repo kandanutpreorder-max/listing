@@ -292,7 +292,7 @@ function applyLang(){
 $('#langBtn').onclick=()=>{LANG=LANG==='th'?'my':'th';ls('lang',LANG);applyLang()};
 
 /* ---------- เริ่มต้น ---------- */
-let BOOT={shop:'',max:{shopee:120,tiktok:255,lazada:255},makeBanner:true,whiteMode:'BROWSER',sceneMode:'TEMPLATE',scenes:{},cutModel:'isnet_fp16'};
+let BOOT={shop:'',max:{shopee:120,tiktok:255,lazada:255},makeBanner:true,whiteMode:'BROWSER',sceneMode:'TEMPLATE',scenes:{},cutModel:'isnet_fp16',bgCount:0,hasCF:false};
 $('#staff').value=ls('staff')||'';
 $('#staff').onchange=()=>ls('staff',$('#staff').value.trim());
 /* เปิดจาก LINE → เด้งไปเบราว์เซอร์จริง (กล้องในแอป LINE มักใช้ไม่ได้) */
@@ -790,6 +790,25 @@ async function makeSceneCanvas(cut,type){
   return cv;
 }
 
+/* วางสินค้าจริง (ที่ตัดพื้นหลังแล้ว) ลงบนฉากที่ AI สร้าง — สินค้าเป็นของจริง 100% */
+async function composeOnBg(cut,bgSrc){
+  const W=1024,cv=document.createElement('canvas');cv.width=cv.height=W;const c=cv.getContext('2d');
+  const bg=await loadImg(bgSrc);const s=Math.max(W/bg.width,W/bg.height);c.drawImage(bg,(W-bg.width*s)/2,(W-bg.height*s)/2,bg.width*s,bg.height*s);
+  const e=elong(cut),tall=cut.height>cut.width;
+  placeCut(c,cut,W/2,W*.52,W*.70,W*.70,e>=4?(tall?38:-38):0,.28);
+  return cv;
+}
+const needStyle=p=>BOOT.hasCF&&BOOT.bgCount>0&&(p.prompts||[]).length&&!(p.extraArr||[]).length;
+/* สร้างรูปสไตล์ฟรี: ฉากจาก Cloudflare + สินค้าจริง */
+async function makeStyleImages(p,cut,log){
+  const n=Math.min(BOOT.bgCount,(p.prompts||[]).length);
+  for(let k=0;k<n;k++){
+    log&&log(`ทำรูปสไตล์ ${k+1}/${n}: ${(p.prompts[k]||{}).style_th||''}`);
+    const bg=await run('generateBackground',p.id,k);
+    p=await run('saveImage',p.id,'extra',(await composeOnBg(cut,bg)).toDataURL('image/jpeg',.9),null);
+  }
+  return p;
+}
 async function ensureImages(){
   if(MAKING||!CUR||!(CUR.title_shopee||CUR.name))return;MAKING=true;
   try{
@@ -803,6 +822,11 @@ async function ensureImages(){
         await run('flagImage',CUR.id,msg);const keep=gather();CUR.error=msg;renderDetail();restore(keep)}
     }
     if(BOOT.makeBanner&&CUR.img_white&&!CUR.img_banner&&CUR.bannerObj&&CUR.bannerObj.headline)await composeBanner(CUR.bannerObj,true,true);
+    if(needStyle(CUR)&&photos.length){
+      const b=await bestCut(CUR.id,photos,t=>setProg('🔁 '+esc(t)));const keep=gather();
+      CUR=await makeStyleImages(CUR,b.cut,t=>setProg('<span class="spin"></span> '+esc(t)));
+      (CUR.extraArr||[]).forEach(x=>{if(!ORDER.includes(x)&&ORDER.length<9)ORDER.push(x)});renderDetail();restore(keep);
+    }
     setProg('');
   }catch(e){setProg('⚠️ ทำรูปไม่สำเร็จ: '+esc(errMsg(e))+' — กด 🔄 เพื่อลองใหม่')}
   finally{MAKING=false}
@@ -920,7 +944,7 @@ function nstat(now){$('#nText').textContent=NC.t;$('#nImg').textContent=NC.i;$('
 async function wake(){try{if('wakeLock' in navigator&&NIGHT)WAKE=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(NIGHT&&document.visibilityState==='visible')wake()});
 async function nwait(ms,msg){const end=Date.now()+ms;while(NIGHT&&Date.now()<end){nstat(`${msg} (อีก ${Math.ceil((end-Date.now())/60000)} นาที)`);await sleep(5000)}}
-function needImgs(p){return (BOOT.whiteMode==='BROWSER'&&!p.imgs.w)||(BOOT.sceneMode==='TEMPLATE'&&!p.imgs.s)||(BOOT.makeBanner&&!p.imgs.b)}
+function needImgs(p){return (BOOT.whiteMode==='BROWSER'&&!p.imgs.w)||(BOOT.sceneMode==='TEMPLATE'&&!p.imgs.s)||(BOOT.makeBanner&&!p.imgs.b)||(BOOT.hasCF&&BOOT.bgCount>0&&!p.imgs.x)}
 async function nightImages(id){
   let p=await run('getProduct',id);const photos=p.photosArr||[];if(!photos.length)return false;
   const needW=BOOT.whiteMode==='BROWSER'&&!p.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!p.img_scene;
@@ -934,6 +958,11 @@ async function nightImages(id){
   if(BOOT.makeBanner&&p.img_white&&!p.img_banner&&p.bannerObj&&p.bannerObj.headline){
     const cv=document.createElement('canvas');await drawBanner(cv,await dataUrl(p.img_white),p.bannerObj,p.shop,'');
     p=await run('saveImage',id,'banner',cv.toDataURL('image/jpeg',.9),JSON.stringify(p.bannerObj));
+  }
+  if(needStyle(p)){
+    const b=await bestCut(id,photos,t=>nlog(id+': 🔁 '+t));
+    p=await makeStyleImages(p,b.cut,t=>nlog(id+': ✨ '+t));
+    Object.keys(CUT).forEach(k=>{if(photos.some(f=>k.startsWith(f)))delete CUT[k]});
   }
   // คืนหน่วยความจำ (เก็บไว้เฉพาะรูปฉาก)
   const keep=new Set([].concat(...Object.values(BOOT.scenes||{})));
@@ -962,9 +991,9 @@ async function nightLoop(){
           NC.e++;nlog(`${p.id}: ${String(r.error||'').slice(0,120)}`);continue;
         }
         NC.t++;nlog(`${p.id}: ✍️ ${String(r.title_shopee||r.name||'').slice(0,60)}`);
-        if(needImgs({imgs:{w:!!r.img_white,s:!!r.img_scene,b:!!r.img_banner}})){
+        if(needImgs({imgs:{w:!!r.img_white,s:!!r.img_scene,b:!!r.img_banner,x:!!(r.extraArr||[]).length}})){
           nstat(`<span class="spin"></span> ทำรูป ${p.id}`);
-          await nightImages(p.id);NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`);
+          await nightImages(p.id);NTRY['img'+p.id]=9;NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`);
         }
       }catch(e){NTRY[p.id]=tries(p.id)+1;NC.e++;nlog(`${p.id}: ${errMsg(e).slice(0,120)}`)}
       nstat();
@@ -973,7 +1002,7 @@ async function nightLoop(){
     for(const p of imgs){
       if(!NIGHT)break;
       nstat(`<span class="spin"></span> ทำรูป ${p.id}`);
-      try{await nightImages(p.id);NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`)}
+      try{await nightImages(p.id);NTRY['img'+p.id]=9;NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`)}
       catch(e){NTRY['img'+p.id]=tries('img'+p.id)+1;NC.e++;nlog(`${p.id} รูป: ${errMsg(e).slice(0,120)}`)}
       nstat();
     }
