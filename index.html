@@ -169,6 +169,7 @@ a{color:var(--brand)}
       <button class="btn" id="btnReload" style="flex:0 0 52px">🔄</button>
     </div>
     <div class="hint" id="runInfo"></div>
+    <button class="btn" id="btnReimg" style="width:100%;margin-top:10px">♻️ ทำรูปใหม่ด้วยสไตล์ล่าสุด (รายการรอตรวจ)</button>
     <button class="btn" id="btnNight" style="width:100%;margin-top:10px;background:#1e1b4b;color:#fff">🌙 โหมดทำงานทั้งคืน (ข้อความ + รูป อัตโนมัติ)</button>
   </div>
   <div id="list"></div>
@@ -183,6 +184,11 @@ a{color:var(--brand)}
     <button class="btn exbtn" data-p="tiktok"><span>⚫ TikTok Shop</span><span id="c-tiktok">0 ชิ้น</span></button>
     <button class="btn exbtn" data-p="lazada"><span>🔵 Lazada</span><span id="c-lazada">0 ชิ้น</span></button>
     <label class="sw"><input type="checkbox" id="incExp"><span>รวมสินค้าที่เคยส่งออกแล้วด้วย</span></label>
+  </div>
+  <div class="card">
+    <div class="lbl">🎨 ส่งต่อให้ Canva</div>
+    <div class="hint" style="margin-bottom:10px">ได้ไฟล์ CSV (หัวข้อ จุดขาย ราคา ลิงก์รูป) ใช้กับ Canva "สร้างแบบกลุ่ม (Bulk Create)" หรือส่งไฟล์ให้ Claude ทำรูปผ่าน Canva ให้</div>
+    <button class="btn exbtn" id="btnCanva"><span>🎨 ไฟล์ Canva</span><span>CSV</span></button>
   </div>
   <div id="expOut"></div>
 </section>
@@ -285,7 +291,7 @@ function applyLang(){
 $('#langBtn').onclick=()=>{LANG=LANG==='th'?'my':'th';ls('lang',LANG);applyLang()};
 
 /* ---------- เริ่มต้น ---------- */
-let BOOT={shop:'',max:{shopee:120,tiktok:255,lazada:255},makeBanner:true,whiteMode:'BROWSER',sceneMode:'TEMPLATE',scenes:{}};
+let BOOT={shop:'',max:{shopee:120,tiktok:255,lazada:255},makeBanner:true,whiteMode:'BROWSER',sceneMode:'TEMPLATE',scenes:{},cutModel:'isnet_fp16'};
 $('#staff').value=ls('staff')||'';
 $('#staff').onchange=()=>ls('staff',$('#staff').value.trim());
 /* เปิดจาก LINE → เด้งไปเบราว์เซอร์จริง (กล้องในแอป LINE มักใช้ไม่ได้) */
@@ -449,6 +455,7 @@ function allImages(){
   if(CUR.img_white)a.push({id:CUR.img_white,tag:'AI พื้นขาว'});
   if(CUR.img_banner)a.push({id:CUR.img_banner,tag:'AI ป้ายขาย'});
   if(CUR.img_scene)a.push({id:CUR.img_scene,tag:'AI จัดฉาก'});
+  (CUR.extraArr||[]).forEach((id,i)=>a.push({id,tag:'สไตล์ '+(i+1)}));
   (CUR.photosArr||[]).forEach((id,i)=>a.push({id,tag:'รูปจริง '+(i+1)}));
   return a;
 }
@@ -489,6 +496,8 @@ function renderDetail(){
       <div class="row" style="margin-top:8px"><button class="btn" id="bnPreview">👁 ดูตัวอย่าง</button><button class="btn primary" id="bnSave">💾 บันทึกป้าย</button></div>
     </div></div>`;
 
+  h+=promptsHtml(c);
+
   const low=String(c.confidence).toLowerCase()==='low';
   h+=`<div class="card"><div class="lbl">AI ระบุว่าเป็น</div>
     <div><b>${esc(c.name)}</b></div>
@@ -501,6 +510,7 @@ function renderDetail(){
   h+=`<div class="card">
     <div class="row"><div><div class="lbl">ราคา (฿)</div><input type="number" data-k="price" value="${esc(c.price)}" inputmode="decimal"></div>
       <div><div class="lbl">จำนวน</div><input type="number" data-k="qty" value="${esc(c.qty)}" inputmode="numeric"></div></div>
+    ${priceRefHtml(c.priceRef)}
     <div class="row"><div><div class="lbl">SKU</div><input type="text" data-k="sku" value="${esc(c.sku)}"></div>
       <div><div class="lbl">สภาพ</div><select data-k="condition">${CONDS.map(x=>`<option ${x.v===c.condition?'selected':''}>${esc(x.v)}</option>`).join('')}</select></div></div>
     <div class="row"><div><div class="lbl">น้ำหนัก (g)</div><input type="number" data-k="weight" value="${esc(c.weight)}"></div>
@@ -526,6 +536,29 @@ function renderDetail(){
   $('#dBody').innerHTML=h;$('#dActions').classList.remove('hidden');
   bindDetail();
 }
+const baht=n=>'฿'+Math.round(Number(n)).toLocaleString();
+function priceRefHtml(r){
+  if(!r)return '';
+  const has=k=>Number(r[k])>0;
+  if(!has('suggested_thb')&&!has('new_thb')&&!has('used_low_thb'))return r.basis?`<div class="note">💰 ราคาตลาด: หาไม่เจอ — ${esc(r.basis)}</div>`:'';
+  return `<div class="note" style="background:#ecfdf5">💰 <b>ราคาอ้างอิงตลาด</b><br>
+    ${has('new_thb')?`มือหนึ่ง ~${baht(r.new_thb)} · `:''}${has('used_low_thb')?`มือสอง ${baht(r.used_low_thb)}–${baht(r.used_high_thb||r.used_low_thb)}`:''}
+    ${has('suggested_thb')?`<br>แนะนำตั้ง <b>${baht(r.suggested_thb)}</b> <button class="btn sm" id="usePrice" data-v="${Math.round(r.suggested_thb)}" style="margin-left:6px">ใช้ราคานี้</button>`:''}
+    ${r.basis?`<div class="hint">อ้างอิง: ${esc(r.basis)}</div>`:''}</div>`;
+}
+function promptsHtml(c){
+  const ps=c.prompts||[];if(!ps.length)return '';
+  return `<div class="card"><div class="lbl">✨ Prompt รูปตามสไตล์ <small>AI เขียนให้ตามแนวสินค้า แก้ได้</small></div>
+    ${ps.map((p,i)=>`<div style="margin-bottom:12px"><div class="hint" style="margin-bottom:4px"><b>${i+1}. ${esc(p.style_th||'สไตล์ '+(i+1))}</b></div>
+      <textarea class="pr" data-i="${i}" style="min-height:110px;font-size:13px">${esc(p.prompt_en)}</textarea>
+      <div class="row" style="margin-top:6px;flex-wrap:wrap">
+        <button class="btn sm prCopy" data-i="${i}">📋 คัดลอก</button>
+        <a class="btn sm" href="https://gemini.google.com/app" target="_blank">🆓 เปิด Gemini</a>
+        <button class="btn sm prGen" data-i="${i}">✨ สร้างเลย</button></div></div>`).join('')}
+    <div class="hint">🆓 ฟรี: คัดลอก prompt → เปิด Gemini → แนบรูปจริงของสินค้า → วาง prompt → ได้รูปแล้วกดอัปโหลดด้านล่าง<br>✨ สร้างเลย: ระบบทำให้อัตโนมัติ (ต้องเปิด Billing Gemini ประมาณ 1-2 บาท/รูป)</div>
+    <label class="btn" style="margin-top:8px;width:100%"><input type="file" id="upExtra" accept="image/*" multiple hidden>📤 อัปโหลดรูปที่ทำเสร็จ</label>
+  </div>`;
+}
 function bannerForm(b){
   const p=b.points||[];
   return `<div class="lbl">ป้ายมุมบน</div><input type="text" id="bBadge" value="${esc(b.badge)}">
@@ -550,6 +583,18 @@ function bindDetail(){
   $('#bnSave').onclick=()=>composeBanner(readBanner(),true);
   if($('#rgWhite'))$('#rgWhite').onclick=()=>regen('white');
   if($('#rgScene'))$('#rgScene').onclick=()=>regen('scene');
+  if($('#usePrice'))$('#usePrice').onclick=()=>{$('[data-k=price]').value=$('#usePrice').dataset.v;toast('ใส่ราคาแล้ว อย่าลืมกดบันทึก')};
+  $$('.prCopy').forEach(b=>b.onclick=async()=>{const t=$(`.pr[data-i="${b.dataset.i}"]`).value;
+    try{await navigator.clipboard.writeText(t);toast('คัดลอกแล้ว')}catch(e){const ta=$(`.pr[data-i="${b.dataset.i}"]`);ta.select();document.execCommand('copy');toast('คัดลอกแล้ว')}});
+  $$('.pr').forEach(t=>t.onchange=()=>{const ps=(CUR.prompts||[]).map((p,i)=>Object.assign({},p,{prompt_en:$(`.pr[data-i="${i}"]`).value}));CUR.prompts=ps;run('savePrompts',CUR.id,JSON.stringify(ps)).catch(()=>{})});
+  $$('.prGen').forEach(b=>b.onclick=async()=>{const i=+b.dataset.i,keep=gather();b.disabled=true;b.innerHTML='<span class="spin"></span> กำลังสร้าง...';
+    try{const before=new Set(CUR.extraArr||[]);CUR=await run('generateStyled',CUR.id,i,+$('#srcIdx').value||0,$(`.pr[data-i="${i}"]`).value);
+      (CUR.extraArr||[]).forEach(x=>{if(!before.has(x)&&!ORDER.includes(x)&&ORDER.length<9)ORDER.push(x)});renderDetail();restore(keep);toast('สร้างรูปแล้ว')}
+    catch(e){toast(/Gemini (400|403|429)|billing|FAILED_PRECONDITION/i.test(errMsg(e))?'ต้องเปิด Billing ของ Gemini ก่อน หรือใช้วิธีฟรี (คัดลอก → เปิด Gemini)':errMsg(e),5000);b.disabled=false;b.textContent='✨ สร้างเลย'}});
+  if($('#upExtra'))$('#upExtra').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;const keep=gather();
+    try{for(const f of fs){toast('กำลังอัปโหลด...');const before=new Set(CUR.extraArr||[]);CUR=await run('saveImage',CUR.id,'extra',await resize(f,1600,.9),null);
+      (CUR.extraArr||[]).forEach(x=>{if(!before.has(x)&&!ORDER.includes(x)&&ORDER.length<9)ORDER.push(x)})}
+      renderDetail();restore(keep);toast('อัปโหลดแล้ว')}catch(err){toast(errMsg(err),4000)}};
   $('#dRe').onclick=async()=>{
     const b=$('#dRe');b.disabled=true;b.innerHTML='<span class="spin"></span> AI กำลังเขียนใหม่...';
     try{CUR=await run('reanalyze',CUR.id,$('[data-k=extra]').value);renderDetail();toast('เขียนใหม่แล้ว')}catch(e){toast(errMsg(e),4000);b.disabled=false;b.textContent='✍️ ให้ AI เขียนข้อความใหม่'}
@@ -605,27 +650,51 @@ async function getCut(fid){
   setProg('<span class="spin"></span> กำลังเตรียมตัวตัดพื้นหลัง (ครั้งแรกโหลดประมาณ 80 MB ควรใช้ Wi-Fi)...');
   const removeBg=await bgLib();
   const src=await dataUrl(fid);
-  const blob=await removeBg(src,{model:'isnet_fp16',output:{format:'image/png'},progress:(k,c,t)=>{
+  const blob=await removeBg(src,{model:BOOT.cutModel||'isnet_fp16',output:{format:'image/png'},progress:(k,c,t)=>{
     if(String(k).startsWith('fetch')&&t)setProg(`<span class="spin"></span> กำลังโหลดตัวตัดพื้นหลัง ${Math.round(c/t*100)}%`);
     else setProg('<span class="spin"></span> กำลังตัดพื้นหลัง...');
   }});
   const u=URL.createObjectURL(blob);const im=await loadImg(u);URL.revokeObjectURL(u);
-  CUT[fid]=trimAlpha(im);setProg('');return CUT[fid];
+  CUT[fid]=trimAlpha(refineEdges(im));setProg('');return CUT[fid];
+}
+/* ทำขอบให้เนียน: เบลอขอบ 1px แล้วบีบให้คม ตัดขอบฟุ้ง/เศษพื้นหลังที่ค้าง */
+function refineEdges(im){
+  const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+  const W=c.width,H=c.height,img=x.getImageData(0,0,W,H),d=img.data,a=new Float32Array(W*H),b=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++)a[i]=d[i*4+3]/255;
+  for(let y=0;y<H;y++)for(let i=0;i<W;i++){let s=0,n=0;for(let dy=-1;dy<=1;dy++){const yy=y+dy;if(yy<0||yy>=H)continue;for(let dx=-1;dx<=1;dx++){const xx=i+dx;if(xx<0||xx>=W)continue;s+=a[yy*W+xx];n++}}b[y*W+i]=s/n}
+  for(let i=0;i<W*H;i++){let t=(b[i]-.32)/(.72-.32);t=t<0?0:t>1?1:t;d[i*4+3]=Math.round(t*t*(3-2*t)*255)}
+  x.putImageData(img,0,0);return c;
 }
 function trimAlpha(im){
-  const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.drawImage(im,0,0);
+  const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
   const d=x.getImageData(0,0,c.width,c.height).data;let l=c.width,t=c.height,r=-1,b=-1;
   for(let y=0;y<c.height;y++)for(let i=0;i<c.width;i++)if(d[(y*c.width+i)*4+3]>20){if(i<l)l=i;if(i>r)r=i;if(y<t)t=y;if(y>b)b=y}
   if(r<0)throw new Error('ตัดพื้นหลังแล้วไม่เจอสินค้า ลองใช้รูปจริงใบอื่น');
   const o=document.createElement('canvas');o.width=r-l+1;o.height=b-t+1;o.getContext('2d').drawImage(c,l,t,o.width,o.height,0,0,o.width,o.height);return o;
 }
 function shadow(c,cx,cy,rx,ry,a){c.save();c.translate(cx,cy);c.scale(rx,ry);const g=c.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(0,0,1,0,Math.PI*2);c.fill();c.restore()}
+/* วางสินค้าตามรูปทรง: ของยาวผอม (ปากกา ตะเกียบ) วางเฉียงให้เต็มกรอบ */
+function elong(cut){return Math.max(cut.width/cut.height,cut.height/cut.width)}
+function placeCut(c,cut,cx,cy,maxW,maxH,ang,shadowA){
+  const r=ang*Math.PI/180,co=Math.abs(Math.cos(r)),si=Math.abs(Math.sin(r));
+  const bw=cut.width*co+cut.height*si,bh=cut.width*si+cut.height*co;
+  const s=Math.min(maxW/bw,maxH/bh),w=cut.width*s,h=cut.height*s;
+  c.save();c.translate(cx,cy);c.rotate(r);
+  if(shadowA){c.shadowColor=`rgba(0,0,0,${shadowA})`;c.shadowBlur=36;c.shadowOffsetY=20*Math.cos(r);c.shadowOffsetX=-20*Math.sin(r)}
+  try{c.filter='brightness(1.04) contrast(1.06) saturate(1.08)'}catch(e){}
+  c.drawImage(cut,-w/2,-h/2,w,h);c.restore();
+  return {w:bw*s,h:bh*s};
+}
 function makeWhiteCanvas(cut){
   const W=1024,cv=document.createElement('canvas');cv.width=cv.height=W;const c=cv.getContext('2d');
   c.fillStyle='#fff';c.fillRect(0,0,W,W);
-  const s=Math.min(820/cut.width,800/cut.height),w=cut.width*s,h=cut.height*s,x=(W-w)/2,y=(W-h)/2-10;
-  shadow(c,W/2,y+h-4,w*.42,22,.22);c.drawImage(cut,x,y,w,h);return cv;
+  const e=elong(cut),tall=cut.height>cut.width;
+  const ang=e>=4?(tall?38:-38):0;            // ยาวผอมมาก → เฉียง
+  placeCut(c,cut,W/2,W/2,W*.86,W*.86,ang,.20);
+  return cv;
 }
+
 function sceneTypeList(){const k=Object.keys(BOOT.scenes||{});return k.length?k:['ครัว','โต๊ะไม้','ห้องนั่งเล่น','โต๊ะเครื่องแป้ง','ห้องน้ำ','โต๊ะทำงาน','กลางแจ้ง','ทั่วไป']}
 function hasSceneFiles(){return Object.values(BOOT.scenes||{}).some(a=>a&&a.length)}
 function rnd(seed){let s=seed||1;return()=>(s=(s*16807)%2147483647)/2147483647}
@@ -653,9 +722,24 @@ async function makeSceneCanvas(cut,type){
     const bg=await loadImg(await dataUrl(pool[Math.floor(Math.random()*pool.length)]));
     const s=Math.max(W/bg.width,W/bg.height);c.drawImage(bg,(W-bg.width*s)/2,(W-bg.height*s)/2,bg.width*s,bg.height*s);
   }else presetBg(c,type||'',W);
-  const s=Math.min(W*.7/cut.width,W*.58/cut.height),w=cut.width*s,h=cut.height*s,base=W*.88,x=(W-w)/2;
-  shadow(c,W/2,base-3,w*.48,W*.035,.38);c.drawImage(cut,x,base-h,w,h);return cv;
+  const e=elong(cut),tall=cut.height>cut.width;
+  if(e>=3.2){
+    // ของยาวผอม → วางนอนบนโต๊ะ เอียงนิดๆ ให้ดูเป็นธรรมชาติ
+    const ang=tall?-82:-8, cy=W*.80;
+    const r=ang*Math.PI/180,bw=Math.abs(cut.width*Math.cos(r))+Math.abs(cut.height*Math.sin(r));
+    const sc=Math.min(W*.74/bw,W*.22/(Math.abs(cut.width*Math.sin(r))+Math.abs(cut.height*Math.cos(r))));
+    shadow(c,W/2,cy+W*.03,bw*sc*.5,W*.03,.35);
+    placeCut(c,cut,W/2,cy,W*.74,W*.22,ang,.25);
+  }else{
+    // ของตั้งได้ → ตั้งบนพื้นโต๊ะ ขนาดราวครึ่งภาพ
+    const s=Math.min(W*.62/cut.width,W*.56/cut.height),w=cut.width*s,h=cut.height*s,base=W*.87;
+    shadow(c,W/2,base-2,w*.5,W*.03,.42);
+    c.save();try{c.filter='brightness(1.03) contrast(1.05) saturate(1.06)'}catch(e){}
+    c.drawImage(cut,(W-w)/2,base-h,w,h);c.restore();
+  }
+  return cv;
 }
+
 async function ensureImages(){
   if(MAKING||!CUR||!(CUR.title_shopee||CUR.name))return;MAKING=true;
   try{
@@ -686,24 +770,41 @@ function loadImg(src){return new Promise((ok,ng)=>{const i=new Image();i.onload=
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 function fit(c,text,weight,x,y,maxW,size,align,min){min=min||20;let s=size;do{c.font=`${weight} ${s}px Kanit, sans-serif`;if(c.measureText(text).width<=maxW)break;s-=2}while(s>min);c.textAlign=align;c.fillText(text,x,y);return s}
 function lum(hex){const m=String(hex).replace('#','');const n=parseInt(m.length===3?m.split('').map(x=>x+x).join(''):m,16);if(isNaN(n))return 0;return(0.299*((n>>16)&255)+0.587*((n>>8)&255)+0.114*(n&255))/255}
+/* ตัดขอบขาวรอบสินค้า เพื่อให้สินค้าในป้ายใหญ่เต็มที่ */
+function trimWhite(im){
+  const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+  const d=x.getImageData(0,0,c.width,c.height).data;let l=c.width,t=c.height,r=-1,b=-1;
+  for(let y=0;y<c.height;y+=2)for(let i=0;i<c.width;i+=2){const k=(y*c.width+i)*4;if(d[k]<226||d[k+1]<226||d[k+2]<226){if(i<l)l=i;if(i>r)r=i;if(y<t)t=y;if(y>b)b=y}}
+  if(r<0)return c;
+  const o=document.createElement('canvas');o.width=r-l+1;o.height=b-t+1;o.getContext('2d').drawImage(c,l,t,o.width,o.height,0,0,o.width,o.height);return o;
+}
 async function drawBanner(cv,src,b,shop,price){
   try{await Promise.all([document.fonts.load('700 60px Kanit'),document.fonts.load('500 40px Kanit'),document.fonts.load('400 24px Kanit')])}catch(e){}
   const W=1024,H=1024;cv.width=W;cv.height=H;const c=cv.getContext('2d');c.textBaseline='middle';
-  c.fillStyle='#fff';c.fillRect(0,0,W,H);
-  const im=await loadImg(src);const top=110,areaH=600;const s=Math.min((W-80)/im.width,areaH/im.height);const w=im.width*s,h=im.height*s;
-  c.drawImage(im,(W-w)/2,top+(areaH-h)/2,w,h);
   const col=/^#[0-9a-f]{3,6}$/i.test(b.color||'')?b.color:'#c2410c';const fg=lum(col)>0.62?'#111':'#fff';
-  c.fillStyle=col;rr(c,24,728,W-48,262,36);c.fill();
-  c.fillStyle=fg;fit(c,b.headline||'','700',W/2,788,W-110,62,'center',30);
-  (b.points||[]).filter(Boolean).slice(0,3).forEach((p,i)=>{
-    const y=860+i*48;c.fillStyle=fg;c.beginPath();c.arc(84,y,15,0,Math.PI*2);c.fill();
-    c.strokeStyle=col;c.lineWidth=5;c.lineCap='round';c.beginPath();c.moveTo(76,y);c.lineTo(82,y+6);c.lineTo(93,y-6);c.stroke();
-    c.fillStyle=fg;fit(c,p,'500',112,y,W-112-60,38,'left',22);
-  });
-  if(b.badge){c.font='700 40px Kanit, sans-serif';const tw=Math.min(c.measureText(b.badge).width,W-420);c.fillStyle=col;rr(c,32,30,tw+64,70,35);c.fill();c.fillStyle=fg;fit(c,b.badge,'700',64,66,W-420,40,'left',24)}
-  if(price){c.fillStyle='#dc2626';c.beginPath();c.arc(W-120,120,90,0,Math.PI*2);c.fill();c.fillStyle='#fff';fit(c,'฿'+Number(price).toLocaleString(),'700',W-120,120,150,52,'center',26)}
-  if(shop){c.fillStyle='#9ca3af';fit(c,shop,'400',W/2,1008,W-100,22,'center',16)}
+  // พื้นหลัง: ขาวไล่เฉดอ่อนๆ ตามสีหลัก
+  const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#ffffff');g.addColorStop(1,'#f5f3f0');c.fillStyle=g;c.fillRect(0,0,W,H);
+  c.save();c.globalAlpha=.07;c.fillStyle=col;c.beginPath();c.arc(W*.5,H*.45,W*.42,0,Math.PI*2);c.fill();c.restore();
+  // สินค้า: ใหญ่ เต็มพื้นที่ด้านบน
+  const prod=trimWhite(await loadImg(src));
+  const s=Math.min((W-120)/prod.width,640/prod.height),w=prod.width*s,h=prod.height*s;
+  c.save();c.globalCompositeOperation='multiply';   // พื้นขาวของรูปกลืนไปกับพื้นหลัง
+  c.drawImage(prod,(W-w)/2,120+(640-h)/2,w,h);c.restore();
+  // แถบล่าง: หัวข้อ + จุดขาย 3 ข้อแบบชิป
+  c.fillStyle=col;rr(c,24,790,W-48,206,30);c.fill();
+  c.fillStyle=fg;fit(c,b.headline||'','700',W/2,842,W-100,56,'center',28);
+  const pts=(b.points||[]).filter(Boolean).slice(0,3);
+  if(pts.length){
+    const gap=14,cw=(W-48-40-gap*(pts.length-1))/pts.length;
+    pts.forEach((p,i)=>{const x=44+i*(cw+gap);
+      c.fillStyle=fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.08)';rr(c,x,902,cw,64,32);c.fill();
+      c.fillStyle=fg;fit(c,'✓ '+p,'500',x+cw/2,935,cw-28,30,'center',18);});
+  }
+  if(b.badge){c.font='700 38px Kanit, sans-serif';const tw=Math.min(c.measureText(b.badge).width,W-420);c.fillStyle=col;rr(c,32,30,tw+60,68,34);c.fill();c.fillStyle=fg;fit(c,b.badge,'700',62,65,W-420,38,'left',22)}
+  if(price){c.fillStyle='#dc2626';c.beginPath();c.arc(W-118,118,88,0,Math.PI*2);c.fill();c.fillStyle='#fff';fit(c,'฿'+Number(price).toLocaleString(),'700',W-118,118,150,50,'center',24)}
+  if(shop){c.fillStyle='#9ca3af';fit(c,shop,'400',W/2,1010,W-100,20,'center',14)}
 }
+
 
 /* ---------- บันทึก / อนุมัติ ---------- */
 $('#dSave').onclick=async()=>{
@@ -745,6 +846,19 @@ $$('.exbtn').forEach(b=>b.onclick=async()=>{
   }catch(e){toast(errMsg(e),4000)}
   b.disabled=false;b.innerHTML=old;
 });
+
+$('#btnCanva').onclick=async()=>{
+  const b=$('#btnCanva');b.disabled=true;
+  try{const r=await run('exportCanva',false);
+    $('#expOut').insertAdjacentHTML('afterbegin',r.count?`<div class="card"><b>Canva</b> — ${r.count} ชิ้น<br><a href="${r.csv}" target="_blank">⬇️ ดาวน์โหลด CSV</a></div>`:'<div class="card hint">ยังไม่มีสินค้าที่ทำรูปพื้นขาวแล้ว</div>')}
+  catch(e){toast(errMsg(e),4000)}
+  b.disabled=false;
+};
+$('#btnReimg').onclick=async()=>{
+  if(!confirm('ลบรูป AI (พื้นขาว/ฉาก/ป้าย) ของสินค้าที่ "รอตรวจ" ทั้งหมด แล้วทำใหม่ด้วยสไตล์ล่าสุด?\n(รูปถ่ายจริงไม่ถูกลบ)'))return;
+  try{const n=await run('resetImages');toast(`ล้างรูปแล้ว ${n} ชิ้น — กำลังเริ่มโหมดทำงานทั้งคืน`,3500);await loadList();if(n&&!NIGHT)nightLoop()}
+  catch(e){toast(errMsg(e),4000)}
+};
 
 /* =================== โหมดทำงานทั้งคืน =================== */
 let NIGHT=false, WAKE=null; const NTRY={}; const NC={t:0,i:0,e:0};
