@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=Pattaya&family=Sriracha&family=Mitr:wght@400;600&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{--brand:#c2410c;--brand2:#fb923c;--bg:#fff7ed;--card:#fff;--ink:#1f2937;--mute:#6b7280;--line:#fed7aa;--ok:#16a34a;--warn:#ca8a04;--err:#dc2626}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -94,7 +95,7 @@ canvas#bn{width:100%;border-radius:12px;background:#fff;display:block;margin-top
 .spin{display:inline-block;width:18px;height:18px;border:3px solid #fed7aa;border-top-color:var(--brand);border-radius:50%;animation:s 1s linear infinite;vertical-align:middle}
 @keyframes s{to{transform:rotate(360deg)}}
 .exbtn{width:100%;margin-bottom:8px;padding:16px;font-size:17px;justify-content:space-between}
-a{color:var(--brand)}
+a{color:var(--brand)}a.btn{text-decoration:none}
 </style>
 </head>
 <body>
@@ -197,6 +198,18 @@ a{color:var(--brand)}
     <button class="btn exbtn" data-p="tiktok"><span>⚫ TikTok Shop</span><span id="c-tiktok">0 ชิ้น</span></button>
     <button class="btn exbtn" data-p="lazada"><span>🔵 Lazada</span><span id="c-lazada">0 ชิ้น</span></button>
     <label class="sw"><input type="checkbox" id="incExp"><span>รวมสินค้าที่เคยส่งออกแล้วด้วย</span></label>
+  </div>
+  <div class="card">
+    <div class="lbl">📱 ชุดโพสต์ขาย: สคริปต์ + รูป</div>
+    <div class="hint" style="margin-bottom:8px">เลือกสินค้า → บันทึกรูปลงมือถือ (ไปที่แกลเลอรี/ลงโพสต์เป็นอัลบั้ม) หรือดาวน์โหลดไฟล์รวมสคริปต์ขาย</div>
+    <div class="row" style="margin-bottom:8px"><button class="btn sm" id="spAll">เลือกทั้งหมด</button><button class="btn sm" id="spNone">ไม่เลือก</button><button class="btn sm" id="spLoad">🔄 โหลดรายการ</button></div>
+    <div id="spList" style="max-height:46vh;overflow:auto"></div>
+    <label class="sw" style="margin-top:6px"><input type="checkbox" id="spCover"><span>เอาเฉพาะรูปปก (รูปกรอบเพจ) ชิ้นละ 1 รูป — เหมาะทำอัลบั้มรวม</span></label>
+    <button class="btn primary exbtn" id="spSave" style="margin-top:10px"><span>📱 บันทึกรูปลงมือถือ / แชร์ลงเพจ</span><span id="spN">0</span></button>
+    <button class="btn exbtn" id="spCopy"><span>📋 คัดลอกแคปชั่นทั้งหมด</span><span>FB</span></button>
+    <button class="btn exbtn" id="spTxt"><span>📄 ไฟล์สคริปต์ขาย (แคปชั่น + สคริปต์ไลฟ์)</span><span>.txt</span></button>
+    <button class="btn exbtn" id="spZip"><span>📦 ดาวน์โหลดทั้งหมด (รูปแยกโฟลเดอร์ + สคริปต์)</span><span>.zip</span></button>
+    <div class="hint" id="spMsg"></div>
   </div>
   <div class="card">
     <div class="lbl">🎨 ส่งต่อให้ Canva</div>
@@ -363,6 +376,7 @@ function show(v){
   $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
   if(v==='list'||v==='exp')loadList();
+  if(v==='exp')loadPack();
   window.scrollTo(0,0);
 }
 
@@ -372,7 +386,7 @@ function renderConds(){
   $('#conds').innerHTML=CONDS.map(c=>`<button class="chip ${c.v===COND?'on':''}" data-v="${esc(c.v)}">${esc(LANG==='my'?c.my:c.v)}</button>`).join('');
   $$('#conds .chip').forEach(b=>b.onclick=()=>{COND=b.dataset.v;ls('cond',COND);renderConds()});
 }
-function resize(file,max=1600,q=.85){
+function resize(file,max=1280,q=.84){
   return new Promise((ok,ng)=>{
     const url=URL.createObjectURL(file);const im=new Image();
     im.onload=()=>{let w=im.naturalWidth,h=im.naturalHeight;const s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);
@@ -427,7 +441,7 @@ $('#camShot').onclick=()=>{
   if(CAM_SINGLE&&!$('#staff').value.trim()){camClose();$('#staff').focus();return toast(t('needStaff'))}
   if(PH.length>=8)return toast(t('max8'));
   const v=$('#camV');if(!v.videoWidth)return;
-  const s=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight)),w=Math.round(v.videoWidth*s),h=Math.round(v.videoHeight*s);
+  const s=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight)),w=Math.round(v.videoWidth*s),h=Math.round(v.videoHeight*s);
   const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(v,0,0,w,h);
   const shot=c.toDataURL('image/jpeg',.85);
   const f=$('#camFlash');f.style.opacity=.7;setTimeout(()=>f.style.opacity=0,120);try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}
@@ -459,7 +473,7 @@ $('#inScan').onchange=async e=>{
 function sizeStr(){const a=[$('#sL').value,$('#sW').value,$('#sH').value].map(s=>s.trim());return a.some(Boolean)?a.map(x=>x||'?').join('x'):''}
 
 /* คิวอัปโหลด: ถ่ายชิ้นต่อไปได้เลยไม่ต้องรอ */
-const QUEUE=[], FAILED=[]; let PUMPING=false;
+const QUEUE=[], FAILED=[];
 /* ---------- ตัวเลือก สี/ลาย ---------- */
 let VARS=[];
 function renderVars(){
@@ -493,26 +507,26 @@ $('#inBulk').onchange=e=>{
   fs.forEach(f=>QUEUE.push(Object.assign(baseJob(),{file:f})));
   toast(t('bulkQ').replace('{n}',fs.length).replace('{c}',COND),3500);renderQueue();pump();
 };
-async function pump(){
-  if(PUMPING)return;PUMPING=true;
-  while(QUEUE.length){
-    const job=QUEUE[0];renderQueue();
+let ACTIVE=0;const UPLOAD_PAR=2;
+function pump(){
+  while(ACTIVE<UPLOAD_PAR&&QUEUE.length){const job=QUEUE.shift();ACTIVE++;uploadJob(job).finally(()=>{ACTIVE--;renderQueue();pump()})}
+  renderQueue();
+}
+async function uploadJob(job){
+  for(;;){
     try{
       if(job.file&&!job.photos){job.photos=[await resize(job.file)];delete job.file}
       const r=await run('saveProduct',job);
-      QUEUE.shift();toast('✅ '+t('saved')+' '+r.id);
+      toast('✅ '+t('saved')+' '+r.id);
       if(job.aiNow)run('processProduct',r.id).catch(()=>{});
-    }catch(e){
-      job.tries++;
-      if(job.tries>=3){QUEUE.shift();job.err=errMsg(e);FAILED.push(job)}else await sleep(3000);
-    }
+      return;
+    }catch(e){job.tries++;if(job.tries>=3){job.err=errMsg(e);FAILED.push(job);return}await sleep(3000)}
   }
-  PUMPING=false;renderQueue();
 }
 function renderQueue(){
   let h='';
-  if(QUEUE.length)h+=`<div class="qitem"><span class="spin"></span> ${t('uploading')} ${QUEUE.length}</div>`;
-  FAILED.forEach((j,i)=>h+=`<div class="qitem" style="color:var(--err)">⚠️ ${t('failed')} (${j.photos.length} 📷) <button class="btn sm" data-i="${i}" style="margin-left:auto">${t('retry')}</button></div>`);
+  if(QUEUE.length+ACTIVE)h+=`<div class="qitem"><span class="spin"></span> ${t('uploading')} ${QUEUE.length+ACTIVE}</div>`;
+  FAILED.forEach((j,i)=>h+=`<div class="qitem" style="color:var(--err)">⚠️ ${t('failed')} (${(j.photos||[1]).length} 📷) <button class="btn sm" data-i="${i}" style="margin-left:auto">${t('retry')}</button></div>`);
   $('#qbar').innerHTML=h;
   $$('#qbar button').forEach(b=>b.onclick=()=>{const j=FAILED.splice(+b.dataset.i,1)[0];j.tries=0;QUEUE.push(j);pump();renderQueue()});
 }
@@ -659,6 +673,9 @@ function renderDetail(){
       ${p==='lazada'?`<div class="lbl">จุดเด่น (บรรทัดละข้อ)</div><textarea data-k="highlights">${esc(c.highlights)}</textarea>`:''}
     </div>`).join('')}
     <div class="lbl">แฮชแท็ก</div><textarea data-k="hashtags" style="min-height:60px">${esc(c.hashtags)}</textarea>
+    <div class="lbl">📣 แคปชั่นโพสต์เพจ <small>{ราคา} = ใส่ราคาให้อัตโนมัติ</small> <button class="btn sm cpy" data-src="caption_fb" style="float:right">📋</button></div><textarea data-k="caption_fb" style="min-height:160px">${esc(c.caption_fb)}</textarea>
+    <div class="lbl">🎤 สคริปต์พูดไลฟ์ <button class="btn sm cpy" data-src="live_script" style="float:right">📋</button></div><textarea data-k="live_script" style="min-height:130px">${esc(c.live_script)}</textarea>
+    <button class="btn" id="saveAllImg" style="width:100%;margin-top:10px">📱 บันทึกรูปสินค้านี้ลงมือถือ</button>
     <div class="lbl">คีย์เวิร์ด</div><textarea data-k="keywords" style="min-height:60px">${esc(c.keywords)}</textarea>
   </div>`;
   if(c.approved_at)h+=`<div class="hint" style="text-align:center">อนุมัติโดย ${esc(c.approved_by)} · ${esc(c.approved_at)}</div>`;
@@ -681,16 +698,28 @@ function variantsHtml(c){
 function syncVariants(){const h=$('[data-k=variants]');if(!h)return;const vs=JSON.parse(h.value||'[]');
   $$('.dvN').forEach(e=>vs[+e.dataset.i].name=e.value.trim());$$('.dvQ').forEach(e=>vs[+e.dataset.i].qty=Math.max(0,+e.value||0));$$('.dvP').forEach(e=>vs[+e.dataset.i].price=e.value.trim());
   h.value=JSON.stringify(vs);const q=$('[data-k=qty]');if(q)q.value=vs.reduce((a,v)=>a+(+v.qty||0),0)}
-function priceRefHtml(r){
-  if(!r)return '';
-  const has=k=>Number(r[k])>0;
-  if(!has('suggested_thb')&&!has('new_thb')&&!has('used_low_thb'))return r.basis?`<div class="note">💰 ราคาตลาด: หาไม่เจอ — ${esc(r.basis)}</div>`:'';
-  return `<div class="note" style="background:#ecfdf5">💰 <b>ราคาอ้างอิงตลาด</b><br>
-    ${has('new_thb')?`มือหนึ่ง ~${baht(r.new_thb)} · `:''}${has('used_low_thb')?`มือสอง ${baht(r.used_low_thb)}–${baht(r.used_high_thb||r.used_low_thb)}`:''}
+function priceRefHtml(r,c){
+  c=c||CUR||{};const has=k=>r&&Number(r[k])>0;
+  const name=[c.brand&&c.brand!=='No Brand'?c.brand:'',c.model,c.name].filter(Boolean).join(' ')||c.title_shopee||'';
+  const enc=encodeURIComponent,ph=(c.photosArr||[])[0];
+  const links=`<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+    ${ph?`<a class="btn sm" target="_blank" href="https://lens.google.com/uploadbyurl?url=${enc('https://lh3.googleusercontent.com/d/'+ph)}&hl=th&gl=th">🔍 Google Lens</a>`:''}
+    <a class="btn sm" target="_blank" href="https://shopee.co.th/search?keyword=${enc(name)}">🟠 Shopee</a>
+    <a class="btn sm" target="_blank" href="https://www.lazada.co.th/catalog/?q=${enc(name)}">🔵 Lazada</a>
+    <a class="btn sm" target="_blank" href="https://www.google.com/search?tbm=shop&gl=th&hl=th&q=${enc(name)}">🛒 Google</a>
+    <a class="btn sm" target="_blank" href="https://jp.mercari.com/search?keyword=${enc(name)}">🇯🇵 Mercari</a></div>`;
+  const refresh=`<button class="btn sm primary" id="refPrice" style="margin-top:8px">🔄 ค้นราคาใหม่ (ประกาศขายตอนนี้)</button>`;
+  if(!r)return `<div class="note">💰 ยังไม่มีราคาอ้างอิง ${refresh}${links}</div>`;
+  const L=(r.listings||[]).slice().sort((a,b)=>a.price_thb-b.price_thb);
+  const top=`${has('new_thb')?`มือหนึ่ง ~${baht(r.new_thb)}`:''}${has('new_thb')&&has('used_low_thb')?' · ':''}${has('used_low_thb')?`มือสอง ${baht(r.used_low_thb)}–${baht(r.used_high_thb||r.used_low_thb)}`:''}${has('jp_thb')?` · ญี่ปุ่น ~${baht(r.jp_thb)}`:''}`;
+  return `<div class="note" style="background:#ecfdf5">💰 <b>ราคาอ้างอิงตลาด</b> <span class="hint">${r.mode==='deep'?'จากประกาศจริง '+(r.n||0)+' รายการ':'ประมาณการ (ยังไม่ได้ค้นละเอียด)'} · ${esc(r.checked_at||'')}</span><br>
+    ${top||'ยังไม่เจอราคาชัดเจน'}
     ${has('suggested_thb')?`<br>แนะนำตั้ง <b>${baht(r.suggested_thb)}</b> <button class="btn sm" id="usePrice" data-v="${Math.round(r.suggested_thb)}" style="margin-left:6px">ใช้ราคานี้</button>`:''}
-    ${r.basis?`<div class="hint">อ้างอิง: ${esc(r.basis)}</div>`:''}</div>`;
-}
-function promptsHtml(c){
+    ${r.basis?`<div class="hint">${esc(r.basis)}</div>`:''}
+    ${L.length?`<details style="margin-top:6px"><summary>ดูประกาศที่เจอ ${L.length} รายการ</summary>${L.map(x=>`<div class="hint" style="margin:4px 0">${x.url?`<a href="${esc(x.url)}" target="_blank">`:''}<b>${baht(x.price_thb)}</b> · ${esc(x.source)}${x.used?' · มือสอง':''}${x.market==='JP'?' · 🇯🇵':''}${/ใกล้เคียง/.test(x.match||'')?' · รุ่นใกล้เคียง':''}<br>${esc(String(x.title||'').slice(0,80))}${x.url?'</a>':''}</div>`).join('')}
+      ${(r.sources||[]).length?`<div class="hint">แหล่งที่ค้น: ${r.sources.map(x=>`<a href="${esc(x.url)}" target="_blank">${esc(x.title||'ลิงก์')}</a>`).join(' · ')}</div>`:''}</details>`:''}
+    ${refresh}${links}</div>`;
+}function promptsHtml(c){
   const ps=c.prompts||[];if(!ps.length)return '';
   return `<div class="card"><div class="lbl">✨ Prompt รูปตามสไตล์ <small>AI เขียนให้ตามแนวสินค้า แก้ได้</small></div>
     ${ps.map((p,i)=>`<div style="margin-bottom:12px"><div class="hint" style="margin-bottom:4px"><b>${i+1}. ${esc(p.style_th||'สไตล์ '+(i+1))}</b></div>
@@ -783,6 +812,10 @@ function bindDetail(){
   if($('#rgWhite'))$('#rgWhite').onclick=()=>regen('white');
   if($('#rgScene'))$('#rgScene').onclick=()=>regen('scene');
   $$('.dvN,.dvQ,.dvP').forEach(e=>e.addEventListener('input',syncVariants));
+  $$('.cpy').forEach(b=>b.onclick=()=>{const v=($(`[data-k="${b.dataset.src}"]`).value||'').replace(/\{ราคา\}/g,($('[data-k=price]').value?Number($('[data-k=price]').value).toLocaleString()+' บาท':'ทักแชทสอบถามราคา'));copyText(v)});
+  if($('#saveAllImg'))$('#saveAllImg').onclick=()=>saveToPhone([{id:CUR.id,images:ORDER.slice()}],$('#saveAllImg'));
+  if($('#refPrice'))$('#refPrice').onclick=async()=>{const b=$('#refPrice'),keep=gather();b.disabled=true;b.innerHTML='<span class="spin"></span> กำลังค้นประกาศขายจริง (~20-40 วิ)...';
+    try{CUR=await run('refreshPrice',CUR.id);renderDetail();restore(keep);toast('อัปเดตราคาอ้างอิงแล้ว')}catch(e){toast(errMsg(e),5000);b.disabled=false;b.textContent='🔄 ค้นราคาใหม่'}};
   if($('#usePrice'))$('#usePrice').onclick=()=>{$('[data-k=price]').value=$('#usePrice').dataset.v;toast('ใส่ราคาแล้ว อย่าลืมกดบันทึก')};
   $$('.prCopy').forEach(b=>b.onclick=async()=>{const t=$(`.pr[data-i="${b.dataset.i}"]`).value;
     try{await navigator.clipboard.writeText(t);toast('คัดลอกแล้ว')}catch(e){const ta=$(`.pr[data-i="${b.dataset.i}"]`);ta.select();document.execCommand('copy');toast('คัดลอกแล้ว')}});
@@ -863,17 +896,24 @@ async function bgLib(){
   if(!BGLIB){const m=await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');BGLIB=m.removeBackground||m.default}
   return BGLIB;
 }
+let BG_DEVICE=null;
 async function getCut(fid,model){
   if(!fid)throw new Error('ไม่มีรูปถ่ายจริง');
   model=model||BOOT.cutModel||'isnet_fp16';const key=fid+'|'+model;
   if(CUT[key])return CUT[key];
   setProg('<span class="spin"></span> กำลังเตรียมตัวตัดพื้นหลัง (ครั้งแรกโหลดประมาณ 80 MB ควรใช้ Wi-Fi)...');
   const removeBg=await bgLib();
-  const src=await dataUrl(fid);
-  const blob=await removeBg(src,{model,output:{format:'image/png'},progress:(k,c,t)=>{
-    if(String(k).startsWith('fetch')&&t)setProg(`<span class="spin"></span> กำลังโหลดตัวตัดพื้นหลัง ${Math.round(c/t*100)}%`);
-    else setProg('<span class="spin"></span> กำลังตัดพื้นหลัง...');
-  }});
+  // ย่อรูปก่อนตัด (ตัวตัดทำงานที่ ~1024px อยู่แล้ว) → เร็วขึ้น ใช้แรมน้อยลง
+  const im0=await loadImg(await dataUrl(fid)),k=Math.min(1,1100/Math.max(im0.naturalWidth,im0.naturalHeight));
+  const c0=document.createElement('canvas');c0.width=Math.round(im0.naturalWidth*k);c0.height=Math.round(im0.naturalHeight*k);c0.getContext('2d').drawImage(im0,0,0,c0.width,c0.height);
+  const src=await new Promise(r=>c0.toBlob(r,'image/png'));
+  const cfg=dev=>({model,device:dev,output:{format:'image/png'},progress:(kk,c,t)=>{
+    if(String(kk).startsWith('fetch')&&t)setProg(`<span class="spin"></span> กำลังโหลดตัวตัดพื้นหลัง ${Math.round(c/t*100)}%`);
+    else setProg('<span class="spin"></span> กำลังตัดพื้นหลัง...');}});
+  let blob;
+  if(BG_DEVICE===null)BG_DEVICE=('gpu' in navigator)?'gpu':'cpu';   // ใช้การ์ดจอ (WebGPU) ถ้ามี เร็วกว่า 3-10 เท่า
+  try{blob=await removeBg(src,cfg(BG_DEVICE))}
+  catch(e){if(BG_DEVICE!=='gpu')throw e;BG_DEVICE='cpu';blob=await removeBg(src,cfg('cpu'))}
   const u=URL.createObjectURL(blob);const im=await loadImg(u);URL.revokeObjectURL(u);
   const ref=refineEdges(im),q=alphaQuality(ref),cut=trimAlpha(ref);cut.q=q;
   CUT[key]=cut;setProg('');return cut;
@@ -1076,29 +1116,33 @@ async function makeStyleImages(p,cut,log){
   }
   return p;
 }
+/* ทำรูปที่ขาดทั้งหมดจากผลตัดครั้งเดียว แล้วบันทึกรวมครั้งเดียว */
+async function buildImages(p,log){
+  const photos=p.photosArr||[];if(!photos.length)return null;
+  const need={w:BOOT.whiteMode==='BROWSER'&&!p.img_white,s:BOOT.sceneMode==='TEMPLATE'&&!p.img_scene,
+    f:needFrame(p),b:BOOT.makeBanner&&!p.img_banner&&p.bannerObj&&p.bannerObj.headline,x:needStyle(p)};
+  if(!need.w&&!need.s&&!need.f&&!need.b&&!need.x)return null;
+  const b=await bestCut(p.id,photos,log);const cut=b.cut,J=cv=>cv.toDataURL('image/jpeg',.9),out={};
+  // งานฉาก AI (Cloudflare) ส่งไปก่อน ระหว่างนั้นวาดรูปอื่นในเครื่อง
+  const bgs=need.x?Promise.all(Array.from({length:Math.min(BOOT.bgCount,(p.prompts||[]).length)},(_,k)=>run('generateBackground',p.id,k).catch(()=>null))):null;
+  if(need.w)out.white=J(b.white||makeWhiteCanvas(cut));
+  if(need.s)out.scene=J(await makeSceneCanvas(cut,p.scene_type));
+  if(need.f)out.frame=J(await drawFrame(cut,p.bannerObj,p.price));
+  if(need.b){const cv=document.createElement('canvas');await drawBanner(cv,null,p.bannerObj,p.shop,(p.bannerObj||{}).showPrice?p.price:'',cut,p.id);out.banner=J(cv)}
+  if(bgs){out.extra=[];for(const bg of await bgs)if(bg)out.extra.push(J(await composeOnBg(cut,bg)))}
+  const flag=b.failed?'⚠️ รูปตัดพื้นหลังไม่ผ่านเกณฑ์อัตโนมัติ ('+b.why+') — ลองกด ↻ ที่รูป หรือถ่ายรูปใหม่ให้เห็นสินค้าทั้งชิ้นบนพื้นเรียบ':'';
+  log&&log('กำลังบันทึกรูป '+Object.keys(out).length+' แบบ');
+  const r=await run('saveImages',p.id,out,need.b?JSON.stringify(p.bannerObj):null,flag);
+  Object.keys(CUT).forEach(k=>{if(photos.some(f=>k.startsWith(f)))delete CUT[k]});
+  return {p:r,failed:b.failed};
+}
 async function ensureImages(){
   if(MAKING||!CUR||!(CUR.title_shopee||CUR.name))return;MAKING=true;
   try{
-    const photos=CUR.photosArr||[];
-    const needW=BOOT.whiteMode==='BROWSER'&&!CUR.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!CUR.img_scene;
-    if((needW||needS)&&photos.length){
-      const b=await bestCut(CUR.id,photos,t=>setProg('🔁 '+esc(t)));
-      if(needW)await saveKind('white',b.white||makeWhiteCanvas(b.cut));
-      if(needS)await saveKind('scene',await makeSceneCanvas(b.cut,CUR.scene_type));
-      if(b.failed){const msg='⚠️ รูปตัดพื้นหลังไม่ผ่านเกณฑ์อัตโนมัติ ('+b.why+') — ลองกด ↻ ที่รูป หรือถ่ายรูปใหม่ให้เห็นสินค้าทั้งชิ้นบนพื้นเรียบ';
-        await run('flagImage',CUR.id,msg);const keep=gather();CUR.error=msg;renderDetail();restore(keep)}
-    }
-    if(BOOT.makeBanner&&CUR.img_white&&!CUR.img_banner&&CUR.bannerObj&&CUR.bannerObj.headline)await composeBanner(CUR.bannerObj,true,true);
-    if(needFrame(CUR)&&photos.length){
-      const b=await bestCut(CUR.id,photos,t=>setProg('🔁 '+esc(t)));
-      setProg('<span class="spin"></span> ทำรูปกรอบเพจ...');
-      await saveKind('frame',await drawFrame(b.cut,CUR.bannerObj,CUR.price));
-    }
-    if(needStyle(CUR)&&photos.length){
-      const b=await bestCut(CUR.id,photos,t=>setProg('🔁 '+esc(t)));const keep=gather();
-      CUR=await makeStyleImages(CUR,b.cut,t=>setProg('<span class="spin"></span> '+esc(t)));
-      (CUR.extraArr||[]).forEach(x=>{if(!ORDER.includes(x)&&ORDER.length<9)ORDER.push(x)});renderDetail();restore(keep);
-    }
+    const r=await buildImages(CUR,t=>setProg('🔄 '+esc(t)));
+    if(r){const keep=gather();CUR=r.p;
+      [CUR.img_frame,CUR.img_white,CUR.img_banner,CUR.img_scene].concat(CUR.extraArr||[]).forEach((x,i)=>{if(x&&!ORDER.includes(x)&&ORDER.length<9){if(x===CUR.img_frame)ORDER.unshift(x);else ORDER.push(x)}});
+      renderDetail();restore(keep)}
     setProg('');
   }catch(e){setProg('⚠️ ทำรูปไม่สำเร็จ: '+esc(errMsg(e))+' — กด 🔄 เพื่อลองใหม่')}
   finally{MAKING=false}
@@ -1240,6 +1284,75 @@ $('#dApprove').onclick=async()=>{
 };
 
 /* =================== หน้าส่งออก =================== */
+/* ---------- ชุดโพสต์ขาย ---------- */
+let SP=[],SPSEL=new Set();
+async function loadPack(){
+  $('#spList').innerHTML='<div class="hint"><span class="spin"></span> กำลังโหลด...</div>';
+  try{SP=await run('salesPack',[])}catch(e){$('#spList').innerHTML=`<div class="note err">${esc(errMsg(e))}</div>`;return}
+  if(!SPSEL.size)SP.filter(p=>p.status==='อนุมัติแล้ว').forEach(p=>SPSEL.add(p.id));
+  renderPack();
+}
+function renderPack(){
+  $('#spList').innerHTML=SP.length?SP.map(p=>`<label class="pcard" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" class="spC" value="${esc(p.id)}" ${SPSEL.has(p.id)?'checked':''} style="width:22px;height:22px;accent-color:var(--brand)">
+    <img src="${img(p.thumb,160)}" loading="lazy" style="width:52px;height:52px"><div class="t"><div class="n" style="font-size:14px">${esc(p.title||p.name||p.id)}</div>
+    <div class="m">${esc(p.id)} · ${p.images.length} รูป${p.price?' · ฿'+p.price:''} · ${esc(p.status)}</div></div></label>`).join(''):'<div class="hint">ยังไม่มีสินค้าที่ทำเสร็จ</div>';
+  $$('.spC').forEach(c=>c.onchange=()=>{c.checked?SPSEL.add(c.value):SPSEL.delete(c.value);spCount()});spCount();
+}
+const spPicked=()=>SP.filter(p=>SPSEL.has(p.id));
+function spCount(){const n=spPicked().reduce((a,p)=>a+($('#spCover').checked?Math.min(1,p.images.length):p.images.length),0);$('#spN').textContent=spPicked().length+' ชิ้น · '+n+' รูป'}
+$('#spLoad').onclick=loadPack;$('#spAll').onclick=()=>{SP.forEach(p=>SPSEL.add(p.id));renderPack()};$('#spNone').onclick=()=>{SPSEL.clear();renderPack()};$('#spCover').onchange=spCount;
+function copyText(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('คัดลอกแล้ว')).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();toast('คัดลอกแล้ว')})}
+function scriptText(ps){return ps.map(p=>`════ ${p.id} · ${p.title||p.name} ════\n\n📣 แคปชั่นโพสต์เพจ\n${p.caption}\n\n🎤 สคริปต์พูดไลฟ์\n${p.live}\n`).join('\n')}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
+/* ดึงรูปเป็นไฟล์ (ทีละ 8 รูป) */
+async function fetchFiles(items,onProg){
+  const all=[];items.forEach(p=>p.images.forEach((id,i)=>all.push({p,id,i})));
+  const out=[];
+  for(let k=0;k<all.length;k+=8){
+    const part=all.slice(k,k+8),need=part.map(x=>x.id).filter(id=>!IMGCACHE[id]);
+    if(need.length)Object.assign(IMGCACHE,await run('getImagesData',need));
+    for(const x of part){const du=IMGCACHE[x.id];if(!du)continue;const b=await (await fetch(du)).blob();
+      out.push({p:x.p,file:new File([b],`${x.p.id}_${String(x.i+1).padStart(2,'0')}.jpg`,{type:b.type||'image/jpeg'})})}
+    onProg&&onProg(Math.min(all.length,k+8),all.length);
+  }
+  return out;
+}
+/* บันทึกลงมือถือ: ใช้หน้าแชร์ของเครื่อง (เลือก "บันทึกรูป"/Facebook/Google Photos) — ไม่รองรับจะดาวน์โหลดทีละรูป */
+async function saveToPhone(items,btn){
+  if(!items.length||!items.some(p=>p.images.length))return toast('ยังไม่ได้เลือกรูป');
+  const old=btn?btn.innerHTML:'';const prog=(a,b)=>{if(btn)btn.innerHTML=`<span class="spin"></span> เตรียมรูป ${a}/${b}`};
+  try{
+    const fs=(await fetchFiles(items,prog)).map(x=>x.file);
+    const BATCH=20;   // แชร์ได้ครั้งละประมาณ 20 รูป (ข้อจำกัดของมือถือ)
+    if(navigator.canShare&&navigator.canShare({files:fs.slice(0,1)})){
+      for(let i=0;i<fs.length;i+=BATCH){
+        const part=fs.slice(i,i+BATCH);
+        if(i>0&&!confirm(`ชุดถัดไป ${i+1}-${Math.min(fs.length,i+BATCH)} จาก ${fs.length} รูป — แชร์ต่อไหม?`))break;
+        try{await navigator.share({files:part})}catch(e){if(e.name==='AbortError')break;throw e}
+      }
+    }else{for(const f of fs){dl(f,f.name);await sleep(350)}toast('ดาวน์โหลดรูปแล้ว ดูได้ในโฟลเดอร์ดาวน์โหลด/แกลเลอรี',5000)}
+  }catch(e){toast(errMsg(e),5000)}
+  if(btn)btn.innerHTML=old;
+}
+$('#spSave').onclick=()=>{const cover=$('#spCover').checked;saveToPhone(spPicked().map(p=>({id:p.id,images:cover?p.images.slice(0,1):p.images})),$('#spSave'))};
+$('#spCopy').onclick=()=>{const ps=spPicked();if(!ps.length)return toast('ยังไม่ได้เลือกสินค้า');copyText(ps.map(p=>p.caption).join('\n\n━━━━━━━━━━\n\n'))};
+$('#spTxt').onclick=()=>{const ps=spPicked();if(!ps.length)return toast('ยังไม่ได้เลือกสินค้า');
+  dl(new Blob(['\uFEFF'+scriptText(ps)],{type:'text/plain;charset=utf-8'}),'สคริปต์ขาย_'+new Date().toISOString().slice(0,10)+'.txt')};
+$('#spZip').onclick=async()=>{
+  const ps=spPicked();if(!ps.length)return toast('ยังไม่ได้เลือกสินค้า');if(typeof JSZip==='undefined')return toast('โหลดตัวทำ ZIP ไม่ได้ ลองรีเฟรช');
+  const b=$('#spZip'),old=b.innerHTML,cover=$('#spCover').checked;
+  try{
+    const items=ps.map(p=>({...p,images:cover?p.images.slice(0,1):p.images}));
+    const fs=await fetchFiles(items,(a,n)=>b.innerHTML=`<span class="spin"></span> เตรียมรูป ${a}/${n}`);
+    const z=new JSZip();z.file('สคริปต์ขายทั้งหมด.txt','\uFEFF'+scriptText(ps));
+    if(cover)z.folder('อัลบั้มรูปปก');
+    fs.forEach(x=>{const name=(x.p.title||x.p.name||'').replace(/[\\/:*?"<>|]/g,'').slice(0,40);
+      if(cover)z.file('อัลบั้มรูปปก/'+x.file.name,x.file);else{const f=z.folder(x.p.id+' '+name);f.file(x.file.name,x.file);f.file('แคปชั่น.txt','\uFEFF'+x.p.caption+'\n\n🎤 สคริปต์ไลฟ์\n'+x.p.live)}});
+    b.innerHTML='<span class="spin"></span> กำลังรวมไฟล์...';
+    dl(await z.generateAsync({type:'blob'}),'ชุดโพสต์ขาย_'+new Date().toISOString().slice(0,10)+'.zip');
+  }catch(e){toast(errMsg(e),5000)}
+  b.innerHTML=old;
+};
 function renderExpCounts(){
   const inc=$('#incExp').checked;
   ['shopee','tiktok','lazada'].forEach(p=>{
@@ -1248,7 +1361,7 @@ function renderExpCounts(){
   });
 }
 $('#incExp').onchange=renderExpCounts;
-$$('.exbtn').forEach(b=>b.onclick=async()=>{
+$$('.exbtn[data-p]').forEach(b=>b.onclick=async()=>{
   const p=b.dataset.p;b.disabled=true;const old=b.innerHTML;b.innerHTML='<span class="spin"></span> กำลังสร้างไฟล์...';
   try{
     const r=await run('exportPlatform',p,$('#incExp').checked);
@@ -1284,70 +1397,52 @@ document.addEventListener('visibilitychange',()=>{if(NIGHT&&document.visibilityS
 async function nwait(ms,msg){const end=Date.now()+ms;while(NIGHT&&Date.now()<end){nstat(`${msg} (อีก ${Math.ceil((end-Date.now())/60000)} นาที)`);await sleep(5000)}}
 function needImgs(p){return (BOOT.makeFrame&&!p.imgs.f)||(BOOT.whiteMode==='BROWSER'&&!p.imgs.w)||(BOOT.sceneMode==='TEMPLATE'&&!p.imgs.s)||(BOOT.makeBanner&&!p.imgs.b)||(BOOT.hasCF&&BOOT.bgCount>0&&!p.imgs.x)}
 async function nightImages(id){
-  let p=await run('getProduct',id);const photos=p.photosArr||[];if(!photos.length)return false;
-  const needW=BOOT.whiteMode==='BROWSER'&&!p.img_white, needS=BOOT.sceneMode==='TEMPLATE'&&!p.img_scene;
-  if(needW||needS){
-    const b=await bestCut(id,photos,t=>nlog(id+': 🔁 '+t));
-    if(needW)p=await run('saveImage',id,'white',(b.white||makeWhiteCanvas(b.cut)).toDataURL('image/jpeg',.9),null);
-    if(needS)p=await run('saveImage',id,'scene',(await makeSceneCanvas(b.cut,p.scene_type)).toDataURL('image/jpeg',.9),null);
-    if(b.failed){await run('flagImage',id,'⚠️ รูปตัดพื้นหลังไม่ผ่านเกณฑ์อัตโนมัติ ('+b.why+') — ควรตรวจ');nlog(id+': ⚠️ ลองครบแล้วยังไม่ผ่าน ใช้รูปที่ดีที่สุด + ติดธงให้ตรวจ')}
-  }
-  if(needFrame(p)){
-    const b=await bestCut(id,photos,t=>nlog(id+': 🔁 '+t));
-    p=await run('saveImage',id,'frame',(await drawFrame(b.cut,p.bannerObj,p.price)).toDataURL('image/jpeg',.9),null);
-    nlog(id+': 🖼️ กรอบเพจ');
-  }
-  if(BOOT.makeBanner&&p.img_white&&!p.img_banner&&p.bannerObj&&p.bannerObj.headline){
-    const cv=document.createElement('canvas');await drawBanner(cv,await dataUrl(p.img_white),p.bannerObj,p.shop,'',null,id);
-    p=await run('saveImage',id,'banner',cv.toDataURL('image/jpeg',.9),JSON.stringify(p.bannerObj));
-  }
-  if(needStyle(p)){
-    const b=await bestCut(id,photos,t=>nlog(id+': 🔁 '+t));
-    p=await makeStyleImages(p,b.cut,t=>nlog(id+': ✨ '+t));
-  }
-  Object.keys(CUT).forEach(k=>{if(photos.some(f=>k.startsWith(f)))delete CUT[k]});
-  // คืนหน่วยความจำ (เก็บไว้เฉพาะรูปฉาก)
+  const p=await run('getProduct',id);
+  const r=await buildImages(p,t=>nlog(id+': 🔁 '+t));
+  if(r&&r.failed)nlog(id+': ⚠️ ลองครบแล้วยังไม่ผ่าน ใช้รูปที่ดีที่สุด + ติดธงให้ตรวจ');
   const keep=new Set([].concat(...Object.values(BOOT.scenes||{})));
   Object.keys(IMGCACHE).forEach(k=>{if(!keep.has(k))delete IMGCACHE[k]});
-  return true;
+  return !!r;
 }
 async function nightLoop(){
   NIGHT=true;$('#night').classList.remove('hidden');await wake();nlog('เริ่มทำงาน');
+  try{bgLib()}catch(e){}
   while(NIGHT){
     let list;
     try{list=await run('listProducts')}catch(e){nlog('โหลดรายการไม่ได้: '+errMsg(e));await nwait(60000,'รอเน็ต');continue}
     const tries=id=>NTRY[id]||0;
-    const text=list.filter(p=>(p.status==='รอ AI'||(p.status==='ผิดพลาด'&&!p.title))&&tries(p.id)<4).reverse();
-    const imgs=list.filter(p=>p.title&&['รอตรวจ','อนุมัติแล้ว','ผิดพลาด'].includes(p.status)&&needImgs(p)&&tries('img'+p.id)<2).reverse();
-    if(!text.length&&!imgs.length){await nwait(120000,'✅ ทำครบแล้ว รอสินค้าใหม่');continue}
-    let pause=0;
-    for(const p of text){
-      if(!NIGHT)break;
-      nstat(`<span class="spin"></span> AI เขียนข้อความ ${p.id} (เหลือ ${text.length})`);
-      try{
-        const r=await run('processProduct',p.id);
-        if(r.status==='AI กำลังทำ'||r.status==='รอ AI'){nlog(`${p.id}: ระบบเบื้องหลังกำลังทำอยู่ ข้ามไปก่อน`);continue}
-        if(r.status==='ผิดพลาด'&&!r.title_shopee){
-          NTRY[p.id]=tries(p.id)+1;
-          if(BUSY.test(r.error||'')){nlog(`${p.id}: AI คนใช้เยอะ/โควตาเต็ม — พักก่อน`);pause=10*60000;break}
-          NC.e++;nlog(`${p.id}: ${String(r.error||'').slice(0,120)}`);continue;
-        }
-        NC.t++;nlog(`${p.id}: ✍️ ${String(r.title_shopee||r.name||'').slice(0,60)}`);
-        if(needImgs({imgs:{w:!!r.img_white,s:!!r.img_scene,b:!!r.img_banner,f:!!r.img_frame,x:!!(r.extraArr||[]).length}})){
-          nstat(`<span class="spin"></span> ทำรูป ${p.id}`);
-          await nightImages(p.id);NTRY['img'+p.id]=9;NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`);
-        }
-      }catch(e){NTRY[p.id]=tries(p.id)+1;NC.e++;nlog(`${p.id}: ${errMsg(e).slice(0,120)}`)}
-      nstat();
-    }
-    if(pause){await nwait(pause,'⏳ โควตา AI เต็ม/คนใช้เยอะ รอลองใหม่');continue}
-    for(const p of imgs){
-      if(!NIGHT)break;
-      nstat(`<span class="spin"></span> ทำรูป ${p.id}`);
-      try{await nightImages(p.id);NTRY['img'+p.id]=9;NC.i++;nlog(`${p.id}: 🖼️ รูปครบ`)}
-      catch(e){NTRY['img'+p.id]=tries('img'+p.id)+1;NC.e++;nlog(`${p.id} รูป: ${errMsg(e).slice(0,120)}`)}
-      nstat();
-    }
+    const textQ=list.filter(p=>(p.status==='รอ AI'||(p.status==='ผิดพลาด'&&!p.title))&&tries(p.id)<4).reverse().map(p=>p.id);
+    const imgQ=list.filter(p=>p.title&&['รอตรวจ','อนุมัติแล้ว','ผิดพลาด'].includes(p.status)&&needImgs(p)&&tries('img'+p.id)<2).reverse().map(p=>p.id);
+    if(!textQ.length&&!imgQ.length){await nwait(120000,'✅ ทำครบแล้ว รอสินค้าใหม่');continue}
+    let pause=0,textBusy=0;const total=textQ.length;
+    const status=()=>nstat(`<span class="spin"></span> ข้อความเหลือ ${textQ.length+textBusy}/${total} · รูปรอคิว ${imgQ.length}`);
+    const textWorker=async()=>{
+      while(NIGHT&&!pause&&textQ.length){
+        const id=textQ.shift();textBusy++;status();
+        try{
+          const r=await run('processProduct',id);
+          if(r.status==='AI กำลังทำ'||r.status==='รอ AI'){nlog(`${id}: ระบบเบื้องหลังกำลังทำอยู่ ข้ามไปก่อน`)}
+          else if(r.status==='ผิดพลาด'&&!r.title_shopee){
+            NTRY[id]=tries(id)+1;
+            if(BUSY.test(r.error||'')){nlog(`${id}: AI คนใช้เยอะ/โควตาเต็ม — พักก่อน`);pause=10*60000}
+            else{NC.e++;nlog(`${id}: ${String(r.error||'').slice(0,120)}`)}
+          }else{NC.t++;nlog(`${id}: ✍️ ${String(r.title_shopee||r.name||'').slice(0,60)}`);imgQ.push(id)}
+        }catch(e){NTRY[id]=tries(id)+1;NC.e++;nlog(`${id}: ${errMsg(e).slice(0,120)}`)}
+        textBusy--;status();
+      }
+    };
+    const imgWorker=async()=>{
+      while(NIGHT){
+        if(!imgQ.length){if(textBusy||textQ.length&&!pause){await sleep(1500);continue}break}
+        const id=imgQ.shift();status();
+        try{if(await nightImages(id)){NC.i++;nlog(`${id}: 🖼️ รูปครบ`)}NTRY['img'+id]=9}
+        catch(e){NTRY['img'+id]=tries('img'+id)+1;NC.e++;nlog(`${id} รูป: ${errMsg(e).slice(0,120)}`)}
+        status();
+      }
+    };
+    await Promise.all([textWorker(),textWorker(),imgWorker()]);
+    nstat();
+    if(pause)await nwait(pause,'⏳ โควตา AI เต็ม/คนใช้เยอะ รอลองใหม่');
   }
 }
 $('#btnNight').onclick=()=>{if(!NIGHT)nightLoop()};
