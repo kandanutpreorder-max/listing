@@ -656,7 +656,10 @@ $('#btnRunAll').onclick=async()=>{
   }
   RUNNING=false;$('#runInfo').textContent='เสร็จแล้ว ✅';loadList();
 };
-setInterval(()=>{if($('#v-list').classList.contains('on')&&$('#detail').classList.contains('hidden')&&LIST.some(p=>p.status==='AI กำลังทำ'))loadList()},30000);
+// เช็กสถานะทุก 8 วิ ระหว่างที่มีสินค้ากำลังทำ (เดิม 30 วิ) — เห็นผลเร็วขึ้น
+setInterval(()=>{if($('#v-list').classList.contains('on')&&$('#detail').classList.contains('hidden')&&LIST.some(p=>p.status==='AI กำลังทำ'||p.status==='รอ AI'))loadList()},8000);
+setInterval(async()=>{if(!CUR||$('#detail').classList.contains('hidden')||CUR.status!=='AI กำลังทำ'||MAKING)return;
+  try{const p=await run('getProduct',CUR.id);if(p.status!==CUR.status){CUR=p;initOrder();renderDetail();ensureImages()}}catch(e){}},8000);
 
 /* =================== หน้าตรวจ/แก้ =================== */
 let CUR=null, ORDER=[], PTAB='shopee'; const IMGCACHE={};
