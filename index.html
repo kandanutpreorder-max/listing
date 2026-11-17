@@ -1458,8 +1458,13 @@ function renderPrev(){
 $('#tpCap').oninput=()=>{clearTimeout(window._pv);window._pv=setTimeout(renderPrev,250)};
 $('#tpImg').onchange=renderPrev;
 $('#tpGen').onclick=async()=>{const ps=pPicked();if(!ps.length)return toast('เลือกสินค้าก่อน');
+  if(ps.length===1){$('#tpCap').value=ps[0].caption||'';CAPAUTO=$('#tpCap').value;renderPrev();return}
   const b=$('#tpGen');b.disabled=true;b.innerHTML='<span class="spin"></span> AI กำลังเขียน...';
-  try{$('#tpCap').value=ps.length===1?(ps[0].caption||''):await run('teaserCaption',ps.map(p=>p.id),{time:$('#tpTime').value.trim(),theme:$('#tpTheme').value.trim()});CAPAUTO=$('#tpCap').value;renderPrev()}catch(e){toast(errMsg(e),4000)}
+  // ใส่ร่างแคปชั่นให้ก่อนทันที (โพสต์/แก้ได้เลย) แล้วค่อยแทนด้วยของ AI ถ้ายังไม่ได้แก้เอง
+  const time=$('#tpTime').value.trim(),theme=$('#tpTheme').value.trim();
+  const draft=`#วันนี้ พบกัน ${time||'18.00'} น. เป็นต้นไป 🔴 LIVE\n`+(theme?theme+'\n':'')+'มีอะไรมาบ้าง 👇\n'+ps.slice(0,8).map(p=>'✅ '+(p.name||p.title||'')).join('\n')+(ps.length>8?'\nและอีก '+(ps.length-8)+' รายการ':'');
+  $('#tpCap').value=draft;CAPAUTO=draft;renderPrev();
+  try{const t=await run('teaserCaption',ps.map(p=>p.id),{time,theme});if($('#tpCap').value===draft){$('#tpCap').value=t;CAPAUTO=t;renderPrev()}}catch(e){toast(errMsg(e),4000)}
   b.disabled=false;b.textContent='✍️ ให้ AI แนะนำแคปชั่น'};
 $('#tpCopy').onclick=()=>{if(!$('#tpCap').value.trim())return toast('ยังไม่มีแคปชั่น');copyText($('#tpCap').value)};
 $('#tpSave').onclick=()=>{const ims=postImages();if(!ims.length)return toast('เลือกสินค้าก่อน');saveToPhone([{id:'post',images:ims}],$('#tpSave'))};
