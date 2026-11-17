@@ -146,6 +146,8 @@ a{color:var(--brand)}a.btn{text-decoration:none}
       </div>
     </div>
 
+    <div class="lbl" data-t="orig">แหล่งสินค้า</div>
+    <div class="chips" id="origs"></div>
     <div class="lbl" data-t="cond">สภาพสินค้า</div>
     <div class="chips" id="conds"></div>
 
@@ -177,6 +179,7 @@ a{color:var(--brand)}a.btn{text-decoration:none}
 <section class="view" id="v-list">
   <div class="card">
     <div class="chips" id="filters"></div>
+    <div id="lDate" style="margin-top:8px"></div>
     <input type="text" id="q" placeholder="🔍 ค้นหา ID / ชื่อสินค้า" style="margin-top:10px">
     <div class="row" style="margin-top:10px">
       <button class="btn primary" id="btnRunAll">🤖 ให้ AI ทำที่ค้าง</button>
@@ -187,6 +190,37 @@ a{color:var(--brand)}a.btn{text-decoration:none}
     <button class="btn" id="btnNight" style="width:100%;margin-top:10px;background:#1e1b4b;color:#fff">🌙 โหมดทำงานทั้งคืน (ข้อความ + รูป อัตโนมัติ)</button>
   </div>
   <div id="list"></div>
+</section>
+
+<!-- ============ โพสต์เพจ ============ -->
+<section class="view" id="v-post">
+  <div class="card">
+    <div class="lbl">1) เลือกสินค้า <small>เลือก 1 ชิ้น = โพสต์สินค้าเดียว (ทุกรูป) · หลายชิ้น = โพสต์รวม</small></div>
+    <div id="pDate" style="margin-bottom:8px"></div>
+    <div class="chips" id="pF" style="margin-bottom:8px"></div>
+    <div class="row" style="margin-bottom:8px"><button class="btn sm" id="pAll">เลือกทั้งหมด</button><button class="btn sm" id="pNone">ไม่เลือก</button><button class="btn sm" id="pLoad">🔄</button></div>
+    <div id="pList" style="max-height:34vh;overflow:auto"></div>
+  </div>
+  <div class="card">
+    <div class="lbl">2) แคปชั่น</div>
+    <div class="row" id="pOpts"><div><div class="lbl">เวลาไลฟ์</div><input type="text" id="tpTime" placeholder="18.00"></div>
+      <div><div class="lbl">รูปที่ใช้ (โพสต์รวม)</div><select id="tpImg"><option value="real">📷 รูปจริง</option><option value="frame">🖼️ รูปกรอบเพจ</option><option value="white">⬜ รูปพื้นขาว</option></select></div></div>
+    <input type="text" id="tpTheme" placeholder="ธีมไลฟ์ (ไม่ใส่ก็ได้) เช่น งานเหมากองกระเป๋ารวม" style="margin-top:8px">
+    <button class="btn primary" id="tpGen" style="width:100%;margin-top:8px">✍️ ให้ AI แนะนำแคปชั่น</button>
+    <textarea id="tpCap" style="min-height:180px;margin-top:8px" placeholder="พิมพ์แคปชั่นเอง หรือกดให้ AI แนะนำ"></textarea>
+  </div>
+  <div class="card">
+    <div class="lbl">3) ตัวอย่างโพสต์</div>
+    <div id="fbPrev"></div>
+  </div>
+  <div class="card">
+    <div class="lbl">4) โพสต์</div>
+    <div class="hint" id="fbSt"></div>
+    <button class="btn ok xl" id="fbNow" style="margin-top:8px">📤 โพสต์ลงเพจเลย</button>
+    <div class="row" style="margin-top:8px"><input type="datetime-local" id="fbWhen" style="flex:2"><button class="btn" id="fbSch" style="flex:1">⏰ ตั้งเวลา</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn sm" id="tpCopy">📋 คัดลอกแคปชั่น</button><button class="btn sm" id="tpSave">📱 บันทึก/แชร์รูป</button></div>
+    <div id="fbOut"></div>
+  </div>
 </section>
 
 <!-- ============ ส่งออก ============ -->
@@ -202,6 +236,8 @@ a{color:var(--brand)}a.btn{text-decoration:none}
   <div class="card">
     <div class="lbl">📱 ชุดโพสต์ขาย: สคริปต์ + รูป</div>
     <div class="hint" style="margin-bottom:8px">เลือกสินค้า → บันทึกรูปลงมือถือ (ไปที่แกลเลอรี/ลงโพสต์เป็นอัลบั้ม) หรือดาวน์โหลดไฟล์รวมสคริปต์ขาย</div>
+    <div id="spDate" style="margin-bottom:8px"></div>
+    <div class="chips" id="spF" style="margin-bottom:8px"></div>
     <div class="row" style="margin-bottom:8px"><button class="btn sm" id="spAll">เลือกทั้งหมด</button><button class="btn sm" id="spNone">ไม่เลือก</button><button class="btn sm" id="spLoad">🔄 โหลดรายการ</button></div>
     <div id="spList" style="max-height:46vh;overflow:auto"></div>
     <label class="sw" style="margin-top:6px"><input type="checkbox" id="spCover"><span>เอาเฉพาะรูปปก (รูปกรอบเพจ) ชิ้นละ 1 รูป — เหมาะทำอัลบั้มรวม</span></label>
@@ -223,6 +259,7 @@ a{color:var(--brand)}a.btn{text-decoration:none}
 <nav>
   <button class="on" data-v="cap"><b>📷</b><span data-t="nav_cap">ถ่ายรูป</span></button>
   <button data-v="list"><b>📋</b><span data-t="nav_list">รายการ</span></button>
+  <button data-v="post"><b>📣</b><span data-t="nav_post">โพสต์</span></button>
   <button data-v="exp"><b>📤</b><span data-t="nav_exp">ส่งออก</span></button>
 </nav>
 
@@ -327,10 +364,12 @@ const errMsg=e=>(e&&e.message)||String(e);
 
 /* ---------- ภาษา ไทย / พม่า ---------- */
 const T={
- th:{staff:'ชื่อพนักงาน',photos:'รูปสินค้า',shoot:'ถ่ายรูป',pick:'เลือกหลายรูป',hint1:'ถ่ายได้หลายมุม (สูงสุด 8 รูป) รูปแรก = รูปหลักที่ AI ใช้แต่งรูป กด ⭐ เพื่อเปลี่ยน',qty:'จำนวน',price:'ราคาขาย (ไม่ใส่ก็ได้)',cond:'สภาพสินค้า',sku:'รหัสสินค้า / QR (ไม่ใส่ก็ได้)',scan:'สแกน',more:'น้ำหนัก / ขนาด (ไม่ใส่ก็ได้ AI จะประมาณให้)',weight:'น้ำหนัก (กรัม)',size:'ขนาด ยาว × กว้าง × สูง (ซม.)',extra:'ข้อมูลเพิ่มเติม (ไม่ใส่ก็ได้)',extraPh:'เช่น ยี่ห้อ รุ่น ขนาด ใช้งานได้ปกติ มีรอยตรงไหน ของในกล่องมีอะไรบ้าง — ยิ่งใส่ AI ยิ่งหาข้อมูลแม่น',aiNow:'ให้ AI ทำทันทีหลังบันทึก',save:'💾 บันทึก แล้วถ่ายชิ้นต่อไป',needPhoto:'ใส่รูปอย่างน้อย 1 รูป',needStaff:'ใส่ชื่อพนักงานก่อน',saved:'บันทึกแล้ว',uploading:'กำลังอัปโหลด',failed:'อัปโหลดไม่สำเร็จ',retry:'ลองใหม่',max8:'ใส่ได้สูงสุด 8 รูป',qrFail:'อ่าน QR ไม่ได้ ลองถ่ายใหม่ให้ชัดขึ้น',nav_cap:'ถ่ายรูป',nav_list:'รายการ',nav_exp:'ส่งออก',lang:'🇲🇲 မြန်မာ',camSave:'บันทึก+ชิ้นต่อไป',camDone:'ยืนยันรูป',camHint:'กดปุ่มส้มถ่ายรัวได้เลย • แตะรูปเล็กเพื่อลบ',camNo:'เปิดกล้องในแอปไม่ได้ ใช้กล้องปกติแทน',bulk:'ลงหลายรายการ: 1 รูป = 1 สินค้า',bulkQ:'เพิ่มเข้าคิว {n} สินค้า (สภาพ: {c})',mMulti:'📷 หลายรูป/ชิ้น',mSingle:'⚡ 1 รูป = 1 ชิ้น',singleSaved:'บันทึกแล้ว ถ่ายชิ้นต่อไปได้เลย',vars:'ตัวเลือก สี / ลาย',varsHint:'(ถ้ามีหลายแบบ ถ่ายแบบละ 1 รูป ไม่ใส่ก็ได้)',varShot:'ถ่ายทีละแบบ',varPick:'เลือกหลายแบบ',varName:'ชื่อแบบ (เว้นว่าง = AI ตั้งให้)',varTotal:'{n} แบบ · รวม {q} ชิ้น'},
- my:{staff:'ဝန်ထမ်းအမည်',photos:'ပစ္စည်းဓာတ်ပုံ',shoot:'ဓာတ်ပုံရိုက်ရန်',pick:'ဓာတ်ပုံများ ရွေးရန်',hint1:'ထောင့်စုံမှ ရိုက်ပါ (အများဆုံး ၈ ပုံ)။ ပထမပုံ = ပင်မပုံ။ ⭐ နှိပ်၍ ပြောင်းနိုင်သည်',qty:'အရေအတွက်',price:'ရောင်းဈေး (မထည့်လည်းရ)',cond:'ပစ္စည်းအခြေအနေ',sku:'ပစ္စည်းကုဒ် / QR (မထည့်လည်းရ)',scan:'စကန်',more:'အလေးချိန် / အရွယ်အစား (မထည့်လည်းရ)',weight:'အလေးချိန် (ဂရမ်)',size:'အရွယ်အစား အလျား × အနံ × အမြင့် (စင်တီမီတာ)',extra:'အချက်အလက် ထပ်ဆောင်း (မထည့်လည်းရ)',extraPh:'ဥပမာ - တံဆိပ်၊ မော်ဒယ်၊ အရွယ်အစား၊ ကောင်းကောင်းအလုပ်လုပ်သည်၊ အစင်းရာ ရှိသည့်နေရာ',aiNow:'သိမ်းပြီးတာနဲ့ AI ကို ချက်ချင်း လုပ်ခိုင်းမည်',save:'💾 သိမ်းပြီး နောက်တစ်ခု ရိုက်ရန်',needPhoto:'ဓာတ်ပုံ အနည်းဆုံး ၁ ပုံ ထည့်ပါ',needStaff:'ဝန်ထမ်းအမည် အရင်ထည့်ပါ',saved:'သိမ်းပြီးပါပြီ',uploading:'တင်နေသည်',failed:'တင်မရပါ',retry:'ပြန်ကြိုးစားရန်',max8:'အများဆုံး ၈ ပုံသာ ထည့်နိုင်သည်',qrFail:'QR ဖတ်မရပါ။ ပြန်ရိုက်ပါ',nav_cap:'ဓာတ်ပုံ',nav_list:'စာရင်း',nav_exp:'ထုတ်ယူ',lang:'🇹🇭 ไทย',camSave:'သိမ်း+နောက်တစ်ခု',camDone:'ဓာတ်ပုံ အတည်ပြု',camHint:'လိမ္မော်ခလုတ်ကို ဆက်တိုက်နှိပ်ပါ • ပုံငယ်ကိုနှိပ်၍ ဖျက်ပါ',camNo:'ကင်မရာ မဖွင့်နိုင်ပါ',bulk:'ပစ္စည်းအများ: ၁ ပုံ = ၁ ခု',bulkQ:'ပစ္စည်း {n} ခု တန်းစီထားသည်',mMulti:'📷 ပုံများ/ခု',mSingle:'⚡ ၁ ပုံ = ၁ ခု',singleSaved:'သိမ်းပြီး၊ နောက်တစ်ခု ရိုက်ပါ',vars:'အရောင် / ပုံစံ ရွေးချယ်မှု',varsHint:'(ပုံစံတစ်ခုလျှင် ၁ ပုံ၊ မထည့်လည်းရ)',varShot:'တစ်ခုချင်း ရိုက်ရန်',varPick:'ပုံများ ရွေးရန်',varName:'အမည် (ဗလာ = AI ပေးမည်)',varTotal:'{n} မျိုး · စုစုပေါင်း {q} ခု'}
+ th:{staff:'ชื่อพนักงาน',photos:'รูปสินค้า',shoot:'ถ่ายรูป',pick:'เลือกหลายรูป',hint1:'ถ่ายได้หลายมุม (สูงสุด 8 รูป) รูปแรก = รูปหลักที่ AI ใช้แต่งรูป กด ⭐ เพื่อเปลี่ยน',qty:'จำนวน',price:'ราคาขาย (ไม่ใส่ก็ได้)',cond:'สภาพสินค้า',sku:'รหัสสินค้า / QR (ไม่ใส่ก็ได้)',scan:'สแกน',more:'น้ำหนัก / ขนาด (ไม่ใส่ก็ได้ AI จะประมาณให้)',weight:'น้ำหนัก (กรัม)',size:'ขนาด ยาว × กว้าง × สูง (ซม.)',extra:'ข้อมูลเพิ่มเติม (ไม่ใส่ก็ได้)',extraPh:'เช่น ยี่ห้อ รุ่น ขนาด ใช้งานได้ปกติ มีรอยตรงไหน ของในกล่องมีอะไรบ้าง — ยิ่งใส่ AI ยิ่งหาข้อมูลแม่น',aiNow:'ให้ AI ทำทันทีหลังบันทึก',save:'💾 บันทึก แล้วถ่ายชิ้นต่อไป',needPhoto:'ใส่รูปอย่างน้อย 1 รูป',needStaff:'ใส่ชื่อพนักงานก่อน',saved:'บันทึกแล้ว',uploading:'กำลังอัปโหลด',failed:'อัปโหลดไม่สำเร็จ',retry:'ลองใหม่',max8:'ใส่ได้สูงสุด 8 รูป',qrFail:'อ่าน QR ไม่ได้ ลองถ่ายใหม่ให้ชัดขึ้น',nav_cap:'ถ่ายรูป',nav_list:'รายการ',nav_exp:'ส่งออก',nav_post:'โพสต์',lang:'🇲🇲 မြန်မာ',camSave:'บันทึก+ชิ้นต่อไป',camDone:'ยืนยันรูป',camHint:'กดปุ่มส้มถ่ายรัวได้เลย • แตะรูปเล็กเพื่อลบ',camNo:'เปิดกล้องในแอปไม่ได้ ใช้กล้องปกติแทน',bulk:'ลงหลายรายการ: 1 รูป = 1 สินค้า',bulkQ:'เพิ่มเข้าคิว {n} สินค้า (สภาพ: {c})',mMulti:'📷 หลายรูป/ชิ้น',mSingle:'⚡ 1 รูป = 1 ชิ้น',singleSaved:'บันทึกแล้ว ถ่ายชิ้นต่อไปได้เลย',orig:'แหล่งสินค้า',vars:'ตัวเลือก สี / ลาย',varsHint:'(ถ้ามีหลายแบบ ถ่ายแบบละ 1 รูป ไม่ใส่ก็ได้)',varShot:'ถ่ายทีละแบบ',varPick:'เลือกหลายแบบ',varName:'ชื่อแบบ (เว้นว่าง = AI ตั้งให้)',varTotal:'{n} แบบ · รวม {q} ชิ้น'},
+ my:{staff:'ဝန်ထမ်းအမည်',photos:'ပစ္စည်းဓာတ်ပုံ',shoot:'ဓာတ်ပုံရိုက်ရန်',pick:'ဓာတ်ပုံများ ရွေးရန်',hint1:'ထောင့်စုံမှ ရိုက်ပါ (အများဆုံး ၈ ပုံ)။ ပထမပုံ = ပင်မပုံ။ ⭐ နှိပ်၍ ပြောင်းနိုင်သည်',qty:'အရေအတွက်',price:'ရောင်းဈေး (မထည့်လည်းရ)',cond:'ပစ္စည်းအခြေအနေ',sku:'ပစ္စည်းကုဒ် / QR (မထည့်လည်းရ)',scan:'စကန်',more:'အလေးချိန် / အရွယ်အစား (မထည့်လည်းရ)',weight:'အလေးချိန် (ဂရမ်)',size:'အရွယ်အစား အလျား × အနံ × အမြင့် (စင်တီမီတာ)',extra:'အချက်အလက် ထပ်ဆောင်း (မထည့်လည်းရ)',extraPh:'ဥပမာ - တံဆိပ်၊ မော်ဒယ်၊ အရွယ်အစား၊ ကောင်းကောင်းအလုပ်လုပ်သည်၊ အစင်းရာ ရှိသည့်နေရာ',aiNow:'သိမ်းပြီးတာနဲ့ AI ကို ချက်ချင်း လုပ်ခိုင်းမည်',save:'💾 သိမ်းပြီး နောက်တစ်ခု ရိုက်ရန်',needPhoto:'ဓာတ်ပုံ အနည်းဆုံး ၁ ပုံ ထည့်ပါ',needStaff:'ဝန်ထမ်းအမည် အရင်ထည့်ပါ',saved:'သိမ်းပြီးပါပြီ',uploading:'တင်နေသည်',failed:'တင်မရပါ',retry:'ပြန်ကြိုးစားရန်',max8:'အများဆုံး ၈ ပုံသာ ထည့်နိုင်သည်',qrFail:'QR ဖတ်မရပါ။ ပြန်ရိုက်ပါ',nav_cap:'ဓာတ်ပုံ',nav_list:'စာရင်း',nav_exp:'ထုတ်ယူ',nav_post:'ပို့စ်',lang:'🇹🇭 ไทย',camSave:'သိမ်း+နောက်တစ်ခု',camDone:'ဓာတ်ပုံ အတည်ပြု',camHint:'လိမ္မော်ခလုတ်ကို ဆက်တိုက်နှိပ်ပါ • ပုံငယ်ကိုနှိပ်၍ ဖျက်ပါ',camNo:'ကင်မရာ မဖွင့်နိုင်ပါ',bulk:'ပစ္စည်းအများ: ၁ ပုံ = ၁ ခု',bulkQ:'ပစ္စည်း {n} ခု တန်းစီထားသည်',mMulti:'📷 ပုံများ/ခု',mSingle:'⚡ ၁ ပုံ = ၁ ခု',singleSaved:'သိမ်းပြီး၊ နောက်တစ်ခု ရိုက်ပါ',orig:'ပစ္စည်းရင်းမြစ်',vars:'အရောင် / ပုံစံ ရွေးချယ်မှု',varsHint:'(ပုံစံတစ်ခုလျှင် ၁ ပုံ၊ မထည့်လည်းရ)',varShot:'တစ်ခုချင်း ရိုက်ရန်',varPick:'ပုံများ ရွေးရန်',varName:'အမည် (ဗလာ = AI ပေးမည်)',varTotal:'{n} မျိုး · စုစုပေါင်း {q} ခု'}
 };
 const CONDS=[{v:'มือ 1 (ใหม่)',my:'ပစ္စည်းအသစ်'},{v:'มือ 2 สภาพดีมาก',my:'တစ်ပတ်ရစ် - အလွန်ကောင်း'},{v:'มือ 2 สภาพดี',my:'တစ်ပတ်ရစ် - ကောင်း'},{v:'มือ 2 มีตำหนิ',my:'တစ်ပတ်ရစ် - အပြစ်အနာအဆာရှိ'}];
+const ORIGS=[{v:'JP',th:'🇯🇵 ญี่ปุ่นมือสอง',my:'🇯🇵 ဂျပန် တစ်ပတ်ရစ်'},{v:'TH',th:'🇹🇭 ของไทย',my:'🇹🇭 ထိုင်း'},{v:'CN',th:'🇨🇳 ของจีน',my:'🇨🇳 တရုတ်'},{v:'OTHER',th:'🌏 อื่นๆ/คละ',my:'🌏 အခြား'}];
+const ORIG_TH={JP:'ญี่ปุ่นมือสอง',TH:'ของไทย',CN:'ของจีน',OTHER:'อื่นๆ/คละ'};
 let LANG=ls('lang')==='my'?'my':'th';
 const t=k=>T[LANG][k]||T.th[k]||k;
 function applyLang(){
@@ -338,7 +377,7 @@ function applyLang(){
   $$('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
   $$('[data-tp]').forEach(e=>e.placeholder=t(e.dataset.tp));
   $('#langBtn').textContent=t('lang');
-  renderConds(); renderQueue();
+  renderConds(); renderOrigs(); renderQueue();
 }
 $('#langBtn').onclick=()=>{LANG=LANG==='th'?'my':'th';ls('lang',LANG);applyLang()};
 
@@ -377,11 +416,59 @@ function show(v){
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
   if(v==='list'||v==='exp')loadList();
   if(v==='exp')loadPack();
+  if(v==='post')loadPost();
   window.scrollTo(0,0);
 }
 
 /* =================== หน้าถ่ายรูป =================== */
 let PH=[]; let COND=ls('cond')||CONDS[1].v;
+/* ---------- ตัวกรองวันที่/ช่วงเวลาที่ถ่าย (ใช้ได้หลายหน้า) ---------- */
+const DFS={};
+const bkk=(ms)=>new Date((ms||Date.now())+7*3600e3).toISOString();   // เวลาไทย
+const todayStr=()=>bkk().slice(0,10);
+function dfInit(k,onChange,def){
+  let st;try{st=JSON.parse(ls('df_'+k)||'null')}catch(e){}
+  DFS[k]=st||Object.assign({date:'',from:'',to:''},def||{});
+  if(DFS[k].date==='@today')DFS[k].date=todayStr();
+  const box=$('#'+k+'Date');
+  const draw=()=>{const f=DFS[k];
+    box.innerHTML=`<div class="row" style="gap:6px;flex-wrap:wrap">
+      <input type="date" class="dfD" value="${f.date}" style="flex:2;min-width:140px">
+      <input type="time" class="dfA" value="${f.from}" style="flex:1;min-width:92px" title="ตั้งแต่">
+      <span style="flex:0 0 auto">–</span>
+      <input type="time" class="dfB" value="${f.to}" style="flex:1;min-width:92px" title="ถึง"></div>
+      <div class="chips" style="margin-top:6px">${[['today','📅 วันนี้'],['yday','เมื่อวาน'],['hour','⏱️ 1 ชม.ล่าสุด'],['am','เช้า'],['pm','บ่าย'],['eve','เย็น-ค่ำ'],['any','ทุกวัน']].map(([v,l])=>`<button class="chip dfQ" data-v="${v}">${l}</button>`).join('')}</div>
+      <div class="hint dfInfo"></div>`;
+    const save=()=>{ls('df_'+k,JSON.stringify(DFS[k]));onChange()};
+    box.querySelector('.dfD').onchange=e=>{f.date=e.target.value;save()};
+    box.querySelector('.dfA').onchange=e=>{f.from=e.target.value;save()};
+    box.querySelector('.dfB').onchange=e=>{f.to=e.target.value;save()};
+    box.querySelectorAll('.dfQ').forEach(b=>b.onclick=()=>{const v=b.dataset.v,n=bkk();
+      if(v==='today')Object.assign(f,{date:todayStr(),from:'',to:''});
+      else if(v==='yday')Object.assign(f,{date:bkk(Date.now()-864e5).slice(0,10),from:'',to:''});
+      else if(v==='hour')Object.assign(f,{date:n.slice(0,10),from:bkk(Date.now()-3600e3).slice(11,16),to:''});
+      else if(v==='am')Object.assign(f,{date:f.date||todayStr(),from:'06:00',to:'12:00'});
+      else if(v==='pm')Object.assign(f,{date:f.date||todayStr(),from:'12:00',to:'18:00'});
+      else if(v==='eve')Object.assign(f,{date:f.date||todayStr(),from:'18:00',to:'23:59'});
+      else Object.assign(f,{date:'',from:'',to:''});
+      draw();save()});
+  };
+  draw();
+}
+/* created = "yyyy-MM-dd HH:mm" (เวลาไทย) */
+function dfOk(k,created){const f=DFS[k];if(!f)return true;const c=String(created||''),d=c.slice(0,10),t=c.slice(11,16);
+  if(f.date&&d!==f.date)return false;if(f.from&&t&&t<f.from)return false;if(f.to&&t&&t>f.to)return false;return true}
+function dfInfo(k,n,total){const b=$('#'+k+'Date .dfInfo');if(!b)return;const f=DFS[k];
+  b.textContent=(f.date||f.from||f.to)?`ถ่ายเมื่อ ${f.date?new Date(f.date+'T00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short'}):'ทุกวัน'}${f.from||f.to?' เวลา '+(f.from||'00:00')+'–'+(f.to||'23:59'):''} · เจอ ${n} จาก ${total} รายการ`:`แสดงทุกวัน · ${total} รายการ`}
+
+let ORIG=ls('orig')||'JP';
+function renderOrigs(){
+  $('#origs').innerHTML=ORIGS.map(o=>`<button class="chip ${o.v===ORIG?'on':''}" data-v="${o.v}">${LANG==='my'?o.my:o.th}</button>`).join('');
+  $$('#origs .chip').forEach(b=>b.onclick=()=>{ORIG=b.dataset.v;ls('orig',ORIG);
+    // ของไทย/จีน ส่วนใหญ่เป็นของใหม่ → เปลี่ยนสภาพให้อัตโนมัติ
+    if(ORIG==='TH'||ORIG==='CN'){COND=CONDS[0].v;ls('cond',COND);renderConds()}else if(COND===CONDS[0].v){COND=CONDS[1].v;ls('cond',COND);renderConds()}
+    renderOrigs()});
+}
 function renderConds(){
   $('#conds').innerHTML=CONDS.map(c=>`<button class="chip ${c.v===COND?'on':''}" data-v="${esc(c.v)}">${esc(LANG==='my'?c.my:c.v)}</button>`).join('');
   $$('#conds .chip').forEach(b=>b.onclick=()=>{COND=b.dataset.v;ls('cond',COND);renderConds()});
@@ -495,11 +582,11 @@ $('#btnSave').onclick=()=>{
   ls('staff',staff);
   QUEUE.push({photos:PH.slice(),qty:+$('#qty').value||1,price:$('#price').value.trim(),condition:COND,sku:$('#sku').value.trim(),
     weight:$('#weight').value.trim(),size:sizeStr(),extra:$('#extra').value.trim(),staff,aiNow:$('#aiNow').checked,tries:0,
-    variants:VARS.map(v=>({photo:v.photo,name:v.name.trim(),qty:+v.qty||1}))});
+    variants:VARS.map(v=>({photo:v.photo,name:v.name.trim(),qty:+v.qty||1})),lot_origin:ORIG});
   PH=[];VARS=[];renderVars();renderThumbs();['#price','#sku','#weight','#sL','#sW','#sH','#extra'].forEach(s=>$(s).value='');$('#qty').value=1;
   window.scrollTo(0,0);renderQueue();pump();
 };
-function baseJob(){return{qty:1,price:'',condition:COND,sku:'',weight:'',size:'',extra:'',staff:$('#staff').value.trim(),aiNow:$('#aiNow').checked,tries:0}}
+function baseJob(){return{qty:1,price:'',condition:COND,lot_origin:ORIG,sku:'',weight:'',size:'',extra:'',staff:$('#staff').value.trim(),aiNow:$('#aiNow').checked,tries:0}}
 $('#inBulk').onchange=e=>{
   const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
   if(!$('#staff').value.trim()){$('#staff').focus();return toast(t('needStaff'))}
@@ -543,11 +630,13 @@ function renderList(){
   $('#filters').innerHTML=STS.map(s=>`<button class="chip ${s===FILTER?'on':''}" data-s="${s}">${s} ${s==='ทั้งหมด'?LIST.length:(c[s]||0)}</button>`).join('');
   $$('#filters .chip').forEach(b=>b.onclick=()=>{FILTER=b.dataset.s;renderList()});
   const q=$('#q').value.trim().toLowerCase();
-  const rows=LIST.filter(p=>(FILTER==='ทั้งหมด'||p.status===FILTER)&&(!q||(p.id+' '+(p.name||'')+' '+(p.title||'')).toLowerCase().includes(q)));
+  if(!DFS.l)dfInit('l',renderList);
+  const rows=LIST.filter(p=>dfOk('l',p.created)&&(FILTER==='ทั้งหมด'||p.status===FILTER)&&(!q||(p.id+' '+(p.name||'')+' '+(p.title||'')).toLowerCase().includes(q)));
+  dfInfo('l',rows.length,LIST.length);
   $('#list').innerHTML=rows.length?rows.map(p=>`<div class="pcard" data-id="${esc(p.id)}">
     <img src="${img(p.thumb,200)}" loading="lazy">
     <div class="t"><div class="n">${esc(p.title||p.name||'(ยังไม่ได้ให้ AI ทำ)')}</div>
-    <div class="m">${esc(p.id)} · ${p.qty} ชิ้น${p.nVar?' · 🎨 '+p.nVar+' แบบ':''}${p.price?' · ฿'+p.price:''} · ${esc(p.staff||'')}</div>
+    <div class="m">${esc(p.id)} · ${p.qty} ชิ้น${p.nVar?' · 🎨 '+p.nVar+' แบบ':''}${p.price?' · ฿'+p.price:''} · ${esc(p.staff||'')}${p.created?' · 🕒 '+esc(String(p.created).slice(8,10)+'/'+String(p.created).slice(5,7)+' '+String(p.created).slice(11,16)):''}</div>
     <span class="badge b-${String(p.status).replace(/\s/g,'')}">${esc(p.status)}</span>
     ${p.exp.shopee?' 🟠':''}${p.exp.tiktok?' ⚫':''}${p.exp.lazada?' 🔵':''}</div></div>`).join(''):'<div class="card hint">ไม่มีรายการ</div>';
   $$('.pcard').forEach(e=>e.onclick=()=>openDetail(e.dataset.id));
@@ -647,7 +736,8 @@ function renderDetail(){
     ${priceRefHtml(c.priceRef)}
     ${variantsHtml(c)}
     <div class="row"><div><div class="lbl">SKU</div><input type="text" data-k="sku" value="${esc(c.sku)}"></div>
-      <div><div class="lbl">สภาพ</div><select data-k="condition">${CONDS.map(x=>`<option ${x.v===c.condition?'selected':''}>${esc(x.v)}</option>`).join('')}</select></div></div>
+      <div><div class="lbl">แหล่งสินค้า</div><select data-k="lot_origin"><option value="">-</option>${ORIGS.map(o=>`<option value="${o.v}" ${c.lot_origin===o.v?'selected':''}>${o.th}</option>`).join('')}</select></div></div>
+    <div class="row"><div><div class="lbl">สภาพ</div><select data-k="condition">${CONDS.map(x=>`<option ${x.v===c.condition?'selected':''}>${esc(x.v)}</option>`).join('')}</select></div></div>
     <div class="row"><div><div class="lbl">น้ำหนักพัสดุ (g)</div><input type="number" data-k="weight" value="${esc(c.weight)}"></div>
       <div><div class="lbl">ขนาดพัสดุ ยxกxส (cm)</div><input type="text" data-k="size" value="${esc(c.size)}"></div></div>
     <div class="row"><div><div class="lbl">น้ำหนักสินค้า (g)</div><input type="number" data-k="item_weight" value="${esc(c.item_weight)}"></div>
@@ -1292,15 +1382,102 @@ async function loadPack(){
   if(!SPSEL.size)SP.filter(p=>p.status==='อนุมัติแล้ว').forEach(p=>SPSEL.add(p.id));
   renderPack();
 }
+let SPF=ls('spf')||'ALL';
+const spShown=()=>SP.filter(p=>dfOk('sp',p.created)&&(SPF==='ALL'||p.origin===SPF));
 function renderPack(){
-  $('#spList').innerHTML=SP.length?SP.map(p=>`<label class="pcard" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" class="spC" value="${esc(p.id)}" ${SPSEL.has(p.id)?'checked':''} style="width:22px;height:22px;accent-color:var(--brand)">
+  if(!DFS.sp)dfInit('sp',()=>{SPSEL.clear();spShown().forEach(p=>SPSEL.add(p.id));renderPack()});
+  if(SPF==='TODAY')SPF='ALL';
+  const F=[['ALL','ทุกแหล่ง'],...ORIGS.map(o=>[o.v,o.th])];
+  $('#spF').innerHTML=F.map(([v,l])=>`<button class="chip ${SPF===v?'on':''}" data-v="${v}">${l} ${v==='ALL'?SP.length:''}</button>`).join('');
+  $$('#spF .chip').forEach(b=>b.onclick=()=>{SPF=b.dataset.v;ls('spf',SPF);SPSEL.clear();spShown().forEach(p=>SPSEL.add(p.id));renderPack()});
+  const L=spShown();dfInfo('sp',L.length,SP.length);
+  $('#spList').innerHTML=L.length?L.map(p=>`<label class="pcard" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" class="spC" value="${esc(p.id)}" ${SPSEL.has(p.id)?'checked':''} style="width:22px;height:22px;accent-color:var(--brand)">
     <img src="${img(p.thumb,160)}" loading="lazy" style="width:52px;height:52px"><div class="t"><div class="n" style="font-size:14px">${esc(p.title||p.name||p.id)}</div>
-    <div class="m">${esc(p.id)} · ${p.images.length} รูป${p.price?' · ฿'+p.price:''} · ${esc(p.status)}</div></div></label>`).join(''):'<div class="hint">ยังไม่มีสินค้าที่ทำเสร็จ</div>';
+    <div class="m">${esc(p.id)} · ${p.images.length} รูป${p.price?' · ฿'+p.price:''}${p.origin?' · '+ORIG_TH[p.origin]:''} · ${esc(p.status)}${p.created?' · 🕒 '+esc(String(p.created).slice(8,10)+'/'+String(p.created).slice(5,7)+' '+String(p.created).slice(11,16)):''}</div></div></label>`).join(''):'<div class="hint">ไม่มีสินค้าในกลุ่มนี้</div>';
   $$('.spC').forEach(c=>c.onchange=()=>{c.checked?SPSEL.add(c.value):SPSEL.delete(c.value);spCount()});spCount();
 }
-const spPicked=()=>SP.filter(p=>SPSEL.has(p.id));
+const spPicked=()=>spShown().filter(p=>SPSEL.has(p.id));
+/* =================== แท็บโพสต์เพจ =================== */
+let PSEL=new Set(),PF=ls('pf')||'TODAY',FBST=null,CAPAUTO='';
+const pShown=()=>SP.filter(p=>dfOk('p',p.created)&&(PF==='ALL'||(PF==='NEW'?!p.posted:p.origin===PF)));
+const pPicked=()=>SP.filter(p=>PSEL.has(p.id));
+async function loadPost(){
+  $('#pList').innerHTML='<div class="hint"><span class="spin"></span> กำลังโหลด...</div>';
+  try{SP=await run('salesPack',[])}catch(e){$('#pList').innerHTML=`<div class="note err">${esc(errMsg(e))}</div>`;return}
+  renderPost();
+  if(!FBST)run('fbStatus').then(r=>{FBST=r;renderPrev()}).catch(()=>{});
+}
+function renderPost(){
+  if(!DFS.p)dfInit('p',renderPost,{date:'@today'});
+  if(PF==='TODAY')PF='ALL';
+  const F=[['ALL','ทุกแหล่ง'],['NEW','ยังไม่เคยโพสต์'],...ORIGS.map(o=>[o.v,o.th])];
+  $('#pF').innerHTML=F.map(([v,l])=>`<button class="chip ${PF===v?'on':''}" data-v="${v}">${l}</button>`).join('');
+  $$('#pF .chip').forEach(b=>b.onclick=()=>{PF=b.dataset.v;ls('pf',PF);renderPost()});
+  const L=pShown();dfInfo('p',L.length,SP.length);
+  $('#pList').innerHTML=L.length?L.map(p=>`<label class="pcard" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" class="pC" value="${esc(p.id)}" ${PSEL.has(p.id)?'checked':''} style="width:22px;height:22px;accent-color:var(--brand)">
+    <img src="${img(p.thumb,160)}" loading="lazy" style="width:52px;height:52px"><div class="t"><div class="n" style="font-size:14px">${esc(p.title||p.id)}</div>
+    <div class="m">${esc(p.id)}${p.price?' · ฿'+p.price:''}${p.origin?' · '+ORIG_TH[p.origin]:''}${p.posted?' · ✅ โพสต์แล้ว':''}${p.created?' · 🕒 '+esc(String(p.created).slice(8,10)+'/'+String(p.created).slice(5,7)+' '+String(p.created).slice(11,16)):''}</div></div></label>`).join(''):'<div class="hint">ไม่มีสินค้าในกลุ่มนี้</div>';
+  $$('.pC').forEach(c=>c.onchange=()=>{c.checked?PSEL.add(c.value):PSEL.delete(c.value);onPick()});
+  onPick();
+}
+$('#pAll').onclick=()=>{pShown().forEach(p=>PSEL.add(p.id));renderPost()};$('#pNone').onclick=()=>{PSEL.clear();renderPost()};$('#pLoad').onclick=loadPost;
+function onPick(){
+  const ps=pPicked(),single=ps.length===1;
+  $('#pOpts').style.display=single?'none':'';$('#tpTheme').style.display=single?'none':'';
+  // สินค้าเดียว: ใส่แคปชั่นของสินค้าให้เลย (ถ้ายังไม่ได้พิมพ์เอง)
+  const cap=$('#tpCap').value.trim();
+  if(single&&(!cap||cap===CAPAUTO)){$('#tpCap').value=ps[0].caption||'';CAPAUTO=$('#tpCap').value}
+  renderPrev();
+}
+/* รูปที่จะโพสต์ */
+function postImages(){const ps=pPicked();if(ps.length===1)return ps[0].images.slice(0,10);const k=$('#tpImg').value;return ps.map(p=>p[k]||p.real||p.thumb).filter(Boolean).slice(0,40)}
+/* ตัวอย่างหน้าตาโพสต์แบบ Facebook */
+function renderPrev(){
+  const ims=postImages(),n=ims.length,cap=$('#tpCap').value;
+  const tile=(id,h,more)=>`<div style="position:relative;height:${h}px;background:#ddd url('${img(id,600)}') center/cover"><div style="position:absolute;inset:0"></div>${more?`<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);color:#fff;font-size:30px;font-weight:700;display:flex;align-items:center;justify-content:center">+${more}</div>`:''}</div>`;
+  let grid='';
+  if(n===1)grid=tile(ims[0],340);
+  else if(n===2)grid=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">${tile(ims[0],260)}${tile(ims[1],260)}</div>`;
+  else if(n===3)grid=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">${tile(ims[0],200)}${tile(ims[1],200)}</div><div style="margin-top:2px">${tile(ims[2],200)}</div>`;
+  else if(n===4)grid=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">${ims.map(i=>tile(i,170)).join('')}</div>`;
+  else if(n>=5)grid=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">${tile(ims[0],200)}${tile(ims[1],200)}</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-top:2px">${tile(ims[2],130)}${tile(ims[3],130)}${tile(ims[4],130,n>5?n-5:0)}</div>`;
+  const name=(FBST&&FBST.ok&&FBST.name)||BOOT.fbPage||BOOT.shop||'เพจ';
+  const long=cap.length>260;
+  $('#fbPrev').innerHTML=`<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;font-family:Kanit,sans-serif">
+    <div style="display:flex;gap:8px;align-items:center;padding:10px 12px">${FBST&&FBST.pic?`<img src="${esc(FBST.pic)}" style="width:40px;height:40px;border-radius:50%">`:'<div style="width:40px;height:40px;border-radius:50%;background:var(--brand)"></div>'}
+      <div><b style="font-size:15px">${esc(name)}</b><div class="hint" style="margin:0">เมื่อสักครู่ · 🌐</div></div></div>
+    <div style="padding:0 12px 10px;white-space:pre-wrap;font-size:15px;line-height:1.45">${esc(long?cap.slice(0,260)+'…':cap)||'<span class="hint">(ยังไม่มีแคปชั่น)</span>'}${long?' <b style="color:#65676b">ดูเพิ่มเติม</b>':''}</div>
+    ${n?grid:'<div class="hint" style="padding:30px;text-align:center">เลือกสินค้าเพื่อดูรูป</div>'}
+    <div style="display:flex;justify-content:space-around;padding:8px;border-top:1px solid #e5e7eb;color:#65676b;font-size:14px"><span>👍 ถูกใจ</span><span>💬 แสดงความคิดเห็น</span><span>↗️ แชร์</span></div></div>
+    <div class="hint">${pPicked().length} สินค้า · ${n} รูป${n>=40?' (สูงสุด 40 รูป/โพสต์)':''}</div>`;
+  $('#fbSt').innerHTML=FBST?(FBST.ok?`✅ เชื่อมกับเพจ <b>${esc(FBST.name)}</b> แล้ว`:`⚠️ ${esc(FBST.msg)}`):'<span class="spin"></span> กำลังตรวจการเชื่อมเพจ...';
+}
+$('#tpCap').oninput=()=>{clearTimeout(window._pv);window._pv=setTimeout(renderPrev,250)};
+$('#tpImg').onchange=renderPrev;
+$('#tpGen').onclick=async()=>{const ps=pPicked();if(!ps.length)return toast('เลือกสินค้าก่อน');
+  const b=$('#tpGen');b.disabled=true;b.innerHTML='<span class="spin"></span> AI กำลังเขียน...';
+  try{$('#tpCap').value=ps.length===1?(ps[0].caption||''):await run('teaserCaption',ps.map(p=>p.id),{time:$('#tpTime').value.trim(),theme:$('#tpTheme').value.trim()});CAPAUTO=$('#tpCap').value;renderPrev()}catch(e){toast(errMsg(e),4000)}
+  b.disabled=false;b.textContent='✍️ ให้ AI แนะนำแคปชั่น'};
+$('#tpCopy').onclick=()=>{if(!$('#tpCap').value.trim())return toast('ยังไม่มีแคปชั่น');copyText($('#tpCap').value)};
+$('#tpSave').onclick=()=>{const ims=postImages();if(!ims.length)return toast('เลือกสินค้าก่อน');saveToPhone([{id:'post',images:ims}],$('#tpSave'))};
+async function doPost(schedule){
+  const ims=postImages(),msg=$('#tpCap').value.trim(),ps=pPicked();
+  if(!ims.length)return toast('เลือกสินค้าก่อน');if(!msg&&!confirm('ยังไม่มีแคปชั่น โพสต์แค่รูปไหม?'))return;
+  if(FBST&&!FBST.ok)return toast(FBST.msg,5000);
+  const when=schedule?new Date(schedule):null;
+  if(when&&(when-Date.now()<11*60e3||when-Date.now()>29*864e5))return toast('ตั้งเวลาได้ตั้งแต่ 11 นาทีถึง 29 วันข้างหน้า',5000);
+  if(!confirm(`${when?'ตั้งเวลาโพสต์ '+when.toLocaleString('th-TH'):'โพสต์ลงเพจตอนนี้'}\n${ps.length} สินค้า · ${ims.length} รูป\nยืนยันไหม?`))return;
+  const b=when?$('#fbSch'):$('#fbNow'),old=b.innerHTML;$('#fbNow').disabled=$('#fbSch').disabled=true;b.innerHTML=`<span class="spin"></span> กำลังอัปโหลด ${ims.length} รูป...`;
+  try{const r=await run('fbPost',{images:ims,message:msg,schedule:when?Math.floor(when/1000):0,productIds:ps.map(p=>p.id)});
+    $('#fbOut').insertAdjacentHTML('afterbegin',`<div class="note" style="background:#ecfdf5;margin-top:8px">${r.scheduled?'⏰ ตั้งเวลาโพสต์แล้ว':'✅ โพสต์แล้ว'} (${r.n} รูป) · <a href="${esc(r.link)}" target="_blank">เปิดดูโพสต์</a></div>`);
+    toast(r.scheduled?'ตั้งเวลาโพสต์แล้ว':'โพสต์ลงเพจแล้ว 🎉',4000);ps.forEach(p=>p.posted=r.link);renderPost()}
+  catch(e){$('#fbOut').insertAdjacentHTML('afterbegin',`<div class="note err" style="margin-top:8px">❌ ${esc(errMsg(e))}</div>`)}
+  $('#fbNow').disabled=$('#fbSch').disabled=false;b.innerHTML=old;
+}
+$('#fbNow').onclick=()=>doPost(0);
+$('#fbSch').onclick=()=>{if(!$('#fbWhen').value)return toast('เลือกวันเวลาก่อน');doPost($('#fbWhen').value)};
 function spCount(){const n=spPicked().reduce((a,p)=>a+($('#spCover').checked?Math.min(1,p.images.length):p.images.length),0);$('#spN').textContent=spPicked().length+' ชิ้น · '+n+' รูป'}
-$('#spLoad').onclick=loadPack;$('#spAll').onclick=()=>{SP.forEach(p=>SPSEL.add(p.id));renderPack()};$('#spNone').onclick=()=>{SPSEL.clear();renderPack()};$('#spCover').onchange=spCount;
+$('#spLoad').onclick=loadPack;$('#spAll').onclick=()=>{spShown().forEach(p=>SPSEL.add(p.id));renderPack()};$('#spNone').onclick=()=>{SPSEL.clear();renderPack()};$('#spCover').onchange=spCount;
 function copyText(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('คัดลอกแล้ว')).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();toast('คัดลอกแล้ว')})}
 function scriptText(ps){return ps.map(p=>`════ ${p.id} · ${p.title||p.name} ════\n\n📣 แคปชั่นโพสต์เพจ\n${p.caption}\n\n🎤 สคริปต์พูดไลฟ์\n${p.live}\n`).join('\n')}
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
@@ -1323,7 +1500,7 @@ async function saveToPhone(items,btn){
   const old=btn?btn.innerHTML:'';const prog=(a,b)=>{if(btn)btn.innerHTML=`<span class="spin"></span> เตรียมรูป ${a}/${b}`};
   try{
     const fs=(await fetchFiles(items,prog)).map(x=>x.file);
-    const BATCH=20;   // แชร์ได้ครั้งละประมาณ 20 รูป (ข้อจำกัดของมือถือ)
+    const BATCH=40;   // แชร์ได้ครั้งละ 40 รูป (โพสต์ Facebook ใส่รูปได้หลายสิบรูปในโพสต์เดียว)
     if(navigator.canShare&&navigator.canShare({files:fs.slice(0,1)})){
       for(let i=0;i<fs.length;i+=BATCH){
         const part=fs.slice(i,i+BATCH);
