@@ -724,7 +724,7 @@ function renderDetail(){
   const low=String(c.confidence).toLowerCase()==='low';
   h+=`<div class="card"><div class="lbl">AI ระบุว่าเป็น</div>
     <div><b>${esc(c.name)}</b></div>
-    <div class="hint">ยี่ห้อ: ${esc(c.brand)} ${c.model?'· รุ่น: '+esc(c.model):''}<br>หมวดหมู่แนะนำ: ${esc(c.category)}<br>กลุ่มลูกค้า: ${esc(c.target)}<br>ความมั่นใจ: ${esc(c.confidence)}</div>
+    <div class="hint">ยี่ห้อ: ${esc(c.brand)} ${c.model?'· รุ่น: '+esc(c.model):''}<br>หมวดหมู่แนะนำ: ${esc(c.category)}<br>กลุ่มลูกค้า: ${esc(c.target)}<br>ความมั่นใจ: ${esc(c.confidence)}${c.ai_time?'<br>⏱️ '+esc(c.ai_time):''}</div>
     ${c.ai_note||low?`<div class="note">🤔 AI ไม่แน่ใจ: ${esc(c.ai_note||'ความมั่นใจต่ำ ควรตรวจชื่อรุ่น/สเปก')}</div>`:''}
     <div class="lbl">ข้อมูลเพิ่มเติม <small>แก้แล้วกดให้ AI เขียนใหม่ได้</small></div>
     <textarea data-k="extra">${esc(c.extra)}</textarea>
